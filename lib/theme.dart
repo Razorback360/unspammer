@@ -47,64 +47,62 @@ extension TextStyleExtensions on TextStyle {
   TextStyle withSize(double size) => copyWith(fontSize: size);
 }
 
-/// Color palette based on user requirements
+/// Color palette constrained to the approved brand colors.
 class AppColors {
-  // Original palette
-  static const Color gold = Color(0xFFf7c53e);
-  static const Color goldMuted = Color(0xFFe6c959);
-  static const Color olive = Color(0xFFbdba66);
-  static const Color oliveDeep = Color(0xFF5d6c31);
+  // Approved base colors.
+  static const Color green = Color(0xFF00573F);
+  static const Color gold = Color(0xFFDAC961);
+  static const Color navy = Color(0xFF003E51);
+  static const Color white = Color(0xFFFFFFFF);
 
-  // Backgrounds
-  static const Color background = Color(0xFF0c4f55);
-  static const Color surface = Color(0xFF0e5a61);
-  static const Color surfaceLight = Color(0xFF137178);
+  // Derived semantic tokens using only the approved colors (with alpha when needed).
+  static const Color goldMuted = Color(0xFFDAC961);
+  static const Color olive = green;
+  static const Color oliveDeep = green;
+  static const Color forestGreen = green;
 
-  // Dark green accent
-  static const Color forestGreen = Color(0xFF224723);
+  static const Color background = Color(0xFFF7F8F9); // Light off-white for breathing room
+  static const Color surface = white;
+  static const Color surfaceLight = white;
 
-  // Text & neutrals
-  static const Color textPrimary = Color(0xFFe5eaea);
-  static const Color textSecondary = Color(0xFF81a1a4);
-  static const Color textMuted = Color(0xFF5d8a8e);
+  static const Color textPrimary = navy;
+  static const Color textSecondary = Color(0x99003E51);
+  static const Color textMuted = Color(0x66003E51);
 
-  // Status-like
   static const Color important = gold;
-  static const Color success = olive;
-  static const Color error = Color(0xFFe57373);
+  static const Color success = green;
+  static const Color error = gold;
 
-  // Semantic aliases
-  static const Color primary = gold;
-  static const Color secondary = olive;
+  static const Color primary = green;
+  static const Color secondary = navy;
   static const Color accent = gold;
-  static const Color accentStrong = goldMuted;
+  static const Color accentStrong = gold;
 
-  static const Color border = surfaceLight;
-  static const Color hover = surfaceLight;
-  static const Color pressed = goldMuted;
-  static const Color disabled = textMuted;
+  static const Color border = Color(0x1A003E51);
+  static const Color hover = Color(0x0D003E51);
+  static const Color pressed = Color(0x1ADAC961);
+  static const Color disabled = Color(0x33003E51);
 
   // Compatibility aliases
-  static const Color emerald = olive;
-  static const Color navy = background;
-  static const Color mist = textPrimary;
+  static const Color emerald = green;
+  static const Color mist = white;
   static const Color graphite = textMuted;
-  static const Color pine = forestGreen;
-  static const Color amber = goldMuted;
+  static const Color pine = green;
+  static const Color amber = gold;
 }
 
 ThemeData get appTheme => ThemeData(
   useMaterial3: true,
-  brightness: Brightness.dark,
+  brightness: Brightness.light,
   scaffoldBackgroundColor: AppColors.background,
-  colorScheme: const ColorScheme.dark(
+  colorScheme: const ColorScheme.light(
     primary: AppColors.primary,
     secondary: AppColors.secondary,
     surface: AppColors.surface,
     error: AppColors.error,
-    onPrimary: AppColors.background,
-    onSecondary: AppColors.mist,
-    onSurface: AppColors.textPrimary,
+    onPrimary: AppColors.white,
+    onSecondary: AppColors.white,
+    onSurface: AppColors.navy,
   ),
   appBarTheme: AppBarTheme(
     backgroundColor: Colors.transparent,

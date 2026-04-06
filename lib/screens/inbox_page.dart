@@ -60,9 +60,6 @@ class _InboxPageState extends State<InboxPage> with TickerProviderStateMixin {
       backgroundColor: AppColors.background,
       body: Stack(
         children: [
-          // Animated background gradients
-          const RepaintBoundary(child: _AnimatedBackgroundOrbs()),
-
           SafeArea(
             child: CustomScrollView(
               slivers: [
@@ -73,24 +70,20 @@ class _InboxPageState extends State<InboxPage> with TickerProviderStateMixin {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        Text('Good morning,', style: context.textStyles.bodyMedium?.copyWith(color: AppColors.textSecondary)),
                         Row(
                           children: [
-                            ShaderMask(
-                              shaderCallback: (bounds) => LinearGradient(
-                                colors: [
-                                  AppColors.textPrimary,
-                                  AppColors.gold,
-                                ],
-                              ).createShader(bounds),
-                              child: Text(
-                                'Inbox',
-                                style: context.textStyles.displaySmall
-                                    ?.copyWith(
-                                      color: AppColors.textPrimary,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                              ),
+                            Text(
+                              'Student',
+                              style: context.textStyles.displaySmall?.copyWith(
+                                    color: AppColors.textPrimary,
+                                    fontWeight: FontWeight.w700,
+                                  ),
                             ),
+                            const SizedBox(width: 8),
+                            const Text('👋', style: TextStyle(fontSize: 24)),
+                            const Spacer(),
+                            _AnimatedNotificationBell(onTap: () => _showNotification(context)),
                           ],
                         ),
                         const SizedBox(height: 20),
@@ -541,28 +534,21 @@ class _FilterChips extends StatelessWidget {
           onTap: () => onSelected(index),
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-              decoration: BoxDecoration(
-                gradient: isSelected
-                    ? LinearGradient(
-                        colors: [AppColors.gold, AppColors.goldMuted],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      )
-                    : null,
-                color: isSelected ? null : AppColors.surface,
-                borderRadius: BorderRadius.circular(AppRadius.full),
+                decoration: BoxDecoration(
+                color: isSelected ? AppColors.surface : AppColors.background,
+                borderRadius: BorderRadius.circular(AppRadius.md),
                 border: Border.all(
                   color: isSelected
-                      ? Colors.transparent
-                      : AppColors.surfaceLight,
-                  width: 1.5,
+                      ? AppColors.border
+                      : Colors.transparent,
+                  width: 1.0,
                 ),
                 boxShadow: isSelected
                     ? [
                         BoxShadow(
-                          color: AppColors.gold.withValues(alpha: 0.4),
-                          blurRadius: 12,
-                          offset: const Offset(0, 4),
+                          color: AppColors.textPrimary.withValues(alpha: 0.05),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
                         ),
                       ]
                     : null,
@@ -570,20 +556,12 @@ class _FilterChips extends StatelessWidget {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(
-                    icons[index],
-                    size: 16,
-                    color: isSelected
-                        ? AppColors.background
-                        : AppColors.textSecondary,
-                  ),
-                  const SizedBox(width: 8),
                   Text(
                     filters[index],
                     style: context.textStyles.labelLarge?.copyWith(
                       color: isSelected
-                          ? AppColors.background
-                          : AppColors.textPrimary,
+                          ? AppColors.textPrimary
+                          : AppColors.textSecondary,
                       fontWeight: isSelected
                           ? FontWeight.w700
                           : FontWeight.w500,
@@ -628,45 +606,27 @@ class _EmailCardState extends State<EmailCard> {
         duration: const Duration(milliseconds: 150),
         child: Container(
           decoration: BoxDecoration(
+            color: AppColors.surface,
             borderRadius: BorderRadius.circular(AppRadius.lg),
-            boxShadow: email.isImportant
-                ? [
-                    BoxShadow(
-                      color: AppColors.gold.withValues(alpha: 0.15),
-                      blurRadius: 20,
-                      offset: const Offset(0, 8),
-                    ),
-                  ]
-                : [
-                    BoxShadow(
-                      color: AppColors.background.withValues(alpha: 0.35),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.navy.withValues(alpha: 0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(AppRadius.lg),
             child: Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    AppColors.surface,
-                    AppColors.surfaceLight.withValues(alpha: 0.3),
-                  ],
+                border: Border(
+                  left: BorderSide(
+                    color: email.isImportant ? AppColors.gold : AppColors.green,
+                    width: 6,
+                  ),
                 ),
-                border: email.isImportant
-                    ? Border.all(
-                        color: AppColors.gold.withValues(alpha: 0.5),
-                        width: 1.5,
-                      )
-                    : Border.all(
-                        color: AppColors.surfaceLight.withValues(alpha: 0.3),
-                      ),
-                borderRadius: BorderRadius.circular(AppRadius.lg),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -675,41 +635,19 @@ class _EmailCardState extends State<EmailCard> {
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Avatar with gradient
+                      // Avatar with solid fill
                       Container(
-                        width: 50,
-                        height: 50,
+                        width: 40,
+                        height: 40,
                         decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: email.isImportant
-                                ? [
-                                    AppColors.gold.withValues(alpha: 0.4),
-                                    AppColors.goldMuted.withValues(alpha: 0.2),
-                                  ]
-                                : [AppColors.surfaceLight, AppColors.surface],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
+                          color: email.isImportant ? AppColors.gold.withValues(alpha: 0.2) : AppColors.green.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(AppRadius.md),
-                          boxShadow: email.isImportant
-                              ? [
-                                  BoxShadow(
-                                    color: AppColors.gold.withValues(
-                                      alpha: 0.3,
-                                    ),
-                                    blurRadius: 8,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ]
-                              : null,
                         ),
                         child: Center(
                           child: Text(
-                            email.sender[0].toUpperCase(),
-                            style: context.textStyles.titleLarge?.copyWith(
-                              color: email.isImportant
-                                  ? AppColors.gold
-                                  : AppColors.textSecondary,
+                            email.sender.substring(0, 2).toUpperCase(),
+                            style: context.textStyles.titleMedium?.copyWith(
+                              color: email.isImportant ? AppColors.gold : AppColors.green,
                               fontWeight: FontWeight.w700,
                             ),
                           ),
@@ -728,45 +666,30 @@ class _EmailCardState extends State<EmailCard> {
                               overflow: TextOverflow.ellipsis,
                             ),
                             const SizedBox(height: 4),
-                            Row(
-                              children: [
-                                Icon(
-                                  Icons.schedule_rounded,
-                                  size: 12,
-                                  color: AppColors.textMuted,
-                                ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  timeAgo,
-                                  style: context.textStyles.labelSmall
-                                      ?.withColor(AppColors.textMuted),
-                                ),
-                              ],
+                            Text(
+                              email.subject,
+                              style: context.textStyles.labelMedium
+                                  ?.copyWith(color: AppColors.textPrimary, fontWeight: FontWeight.w600),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ],
                         ),
                       ),
-                      // Important badge with glow
-                      if (email.isImportant)
-                        _ImportantBadge(
-                          shimmerController: widget.shimmerController,
-                        ),
+                      const SizedBox(width: 8),
+                      Text(
+                        timeAgo,
+                        style: context.textStyles.labelSmall?.withColor(AppColors.textMuted),
+                      ),
                     ],
                   ),
-                  const SizedBox(height: 16),
-                  // Subject
-                  Text(
-                    email.subject,
-                    style: context.textStyles.headlineSmall,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 12),
                   // Snippet
                   Text(
                     email.snippet,
-                    style: context.textStyles.bodyMedium?.withColor(
-                      AppColors.textSecondary,
+                    style: context.textStyles.bodyMedium?.copyWith(
+                      color: AppColors.textSecondary,
+                      fontSize: 13,
                     ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
@@ -790,50 +713,5 @@ class _EmailCardState extends State<EmailCard> {
   }
 }
 
-class _ImportantBadge extends StatelessWidget {
-  final AnimationController shimmerController;
-  const _ImportantBadge({required this.shimmerController});
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: shimmerController,
-      builder: (context, child) {
-        return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                AppColors.gold.withValues(alpha: 0.2),
-                AppColors.gold.withValues(
-                  alpha:
-                      0.1 +
-                      0.1 * math.sin(shimmerController.value * math.pi * 2),
-                ),
-                AppColors.gold.withValues(alpha: 0.2),
-              ],
-              stops: [0.0, shimmerController.value, 1.0],
-            ),
-            borderRadius: BorderRadius.circular(AppRadius.full),
-            border: Border.all(color: AppColors.gold.withValues(alpha: 0.4)),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.bolt_rounded, color: AppColors.gold, size: 14),
-              const SizedBox(width: 4),
-              Text(
-                'Important',
-                style: context.textStyles.labelSmall?.copyWith(
-                  color: AppColors.gold,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-}
+// Nothing
 

@@ -32,7 +32,8 @@ class _HomePageState extends State<HomePage> {
           TickerMode(enabled: _currentIndex == 1, child: const CalendarPage()),
         ],
       ),
-      bottomNavigationBar: _GlassNavBar(
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+      floatingActionButton: _GlassNavBar(
         currentIndex: _currentIndex,
         onTap: _onTabChanged,
       ),
@@ -49,33 +50,24 @@ class _GlassNavBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            AppColors.surfaceLight.withValues(alpha: 0.65),
-            AppColors.surface,
-          ],
-        ),
-        border: Border(
-          top: BorderSide(
-            color: AppColors.accent.withValues(alpha: 0.4),
-            width: 1,
-          ),
-        ),
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(100),
         boxShadow: [
           BoxShadow(
-            color: AppColors.background.withValues(alpha: 0.5),
+            color: AppColors.navy.withValues(alpha: 0.1),
             blurRadius: 16,
-            offset: const Offset(0, -3),
+            offset: const Offset(0, 4),
           ),
         ],
       ),
       child: SafeArea(
+        bottom: false,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
           child: Row(
+            mainAxisSize: MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
               _AnimatedNavItem(
@@ -83,8 +75,8 @@ class _GlassNavBar extends StatelessWidget {
                 label: 'Inbox',
                 isSelected: currentIndex == 0,
                 onTap: () => onTap(0),
-                badgeCount: 3,
               ),
+              const SizedBox(width: 8),
               _AnimatedNavItem(
                 icon: Icons.calendar_month_rounded,
                 label: 'Calendar',

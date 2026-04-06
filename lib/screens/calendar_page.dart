@@ -82,12 +82,9 @@ class _CalendarPageState extends State<CalendarPage>
     final selectedEvents = _getEventsForDate(_selectedDate);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.surface,
       body: Stack(
         children: [
-          // Animated background
-          _AnimatedCalendarBackground(controller: _backgroundController),
-
           SafeArea(
             child: Stack(
               children: [
@@ -103,24 +100,18 @@ class _CalendarPageState extends State<CalendarPage>
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              ShaderMask(
-                                shaderCallback: (bounds) => LinearGradient(
-                                  colors: [
-                                    AppColors.textPrimary,
-                                    AppColors.gold.withValues(alpha: 0.8),
-                                  ],
-                                ).createShader(bounds),
-                                child: Text(
-                                  'Calendar',
-                                  style: context.textStyles.displaySmall
-                                      ?.copyWith(
-                                        color: AppColors.textPrimary,
-                                        fontWeight: FontWeight.w700,
-                                      ),
-                                ),
+                              Text(
+                                'Schedule',
+                                style: context.textStyles.displaySmall?.copyWith(
+                                      color: AppColors.textPrimary,
+                                      fontWeight: FontWeight.w700,
+                                    ),
                               ),
                               const SizedBox(height: 4),
-                              _AnimatedEventCount(count: dummyEvents.length),
+                              Text(
+                                '${dummyEvents.length} upcoming events - ${_focusedMonth.month == 4 ? 'April' : 'Month'} ${_focusedMonth.year}',
+                                style: context.textStyles.bodyMedium?.copyWith(color: AppColors.textSecondary),
+                              )
                             ],
                           ),
                           _AnimatedTodayButton(onTap: _jumpToToday),
@@ -364,25 +355,8 @@ class _CalendarWidget extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              AppColors.surface,
-              AppColors.surfaceLight.withValues(alpha: 0.3),
-            ],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
+          color: AppColors.surface,
           borderRadius: BorderRadius.circular(AppRadius.lg),
-          border: Border.all(
-            color: AppColors.surfaceLight.withValues(alpha: 0.3),
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.background.withValues(alpha: 0.35),
-              blurRadius: 14,
-              offset: const Offset(0, 8),
-            ),
-          ],
         ),
         child: Column(
           children: [
@@ -673,28 +647,12 @@ class _CalendarDayState extends State<_CalendarDay>
         width: 40,
         height: 44,
         decoration: BoxDecoration(
-          gradient: widget.isSelected
-              ? LinearGradient(
-                  colors: [AppColors.gold, AppColors.goldMuted],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                )
-              : null,
           color: widget.isSelected
-              ? null
+              ? AppColors.green
               : widget.isToday
-              ? AppColors.gold.withValues(alpha: 0.15)
+              ? AppColors.green.withValues(alpha: 0.1)
               : Colors.transparent,
-          borderRadius: BorderRadius.circular(AppRadius.sm),
-          boxShadow: widget.isSelected
-              ? [
-                  BoxShadow(
-                    color: AppColors.gold.withValues(alpha: 0.4),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ]
-              : null,
+          borderRadius: BorderRadius.circular(AppRadius.full),
         ),
         child: Stack(
           alignment: Alignment.center,
@@ -703,9 +661,9 @@ class _CalendarDayState extends State<_CalendarDay>
               '${widget.dayNumber}',
               style: context.textStyles.titleMedium?.copyWith(
                 color: widget.isSelected
-                    ? AppColors.background
+                    ? AppColors.white
                     : widget.isToday
-                    ? AppColors.gold
+                    ? AppColors.green
                     : AppColors.textPrimary,
                 fontWeight: widget.isSelected || widget.isToday
                     ? FontWeight.w700
@@ -715,27 +673,13 @@ class _CalendarDayState extends State<_CalendarDay>
             if (widget.hasEvents && !widget.isSelected)
               Positioned(
                 bottom: 4,
-                child: AnimatedBuilder(
-                  animation: _controller,
-                  builder: (context, child) {
-                    return Container(
-                      width: 6,
-                      height: 6,
-                      decoration: BoxDecoration(
-                        color: AppColors.olive,
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.olive.withValues(
-                              alpha: 0.5 * _controller.value,
-                            ),
-                            blurRadius: 4,
-                            spreadRadius: 1,
-                          ),
-                        ],
-                      ),
-                    );
-                  },
+                child: Container(
+                  width: 4,
+                  height: 4,
+                  decoration: const BoxDecoration(
+                    color: AppColors.green,
+                    shape: BoxShape.circle,
+                  ),
                 ),
               ),
           ],
@@ -769,28 +713,25 @@ class _EventsPanel extends StatelessWidget {
         return Container(
           width: double.infinity,
           decoration: BoxDecoration(
-            gradient: LinearGradient(
+            gradient: const LinearGradient(
               colors: [
-                AppColors.surface,
-                AppColors.surface,
+                AppColors.white,
+                AppColors.white,
               ],
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
             ),
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(36)),
-            border: Border(
-              top: BorderSide(
-                color: AppColors.surfaceLight.withValues(alpha: 0.6),
-                width: 1.2,
-              ),
-            ),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
             boxShadow: [
               BoxShadow(
-                color: AppColors.background.withValues(alpha: 0.45),
+                color: AppColors.navy.withValues(alpha: 0.05),
                 blurRadius: 16,
                 offset: const Offset(0, -5),
               ),
             ],
+            border: Border(
+              top: BorderSide(color: AppColors.border, width: 1.0),
+            ),
           ),
           child: CustomScrollView(
             controller: scrollController,
@@ -946,22 +887,11 @@ class _AnimatedDateBadgeState extends State<_AnimatedDateBadge>
         return Transform.scale(
           scale: 0.8 + 0.2 * Curves.elasticOut.transform(_controller.value),
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  AppColors.gold.withValues(alpha: 0.36),
-                  AppColors.goldMuted.withValues(alpha: 0.28),
-                ],
-              ),
-              borderRadius: BorderRadius.circular(AppRadius.full),
-              border: Border.all(color: AppColors.gold.withValues(alpha: 0.55)),
-            ),
             child: Text(
               _formatDate(widget.date),
-              style: context.textStyles.labelLarge?.copyWith(
-                color: AppColors.gold,
-                fontWeight: FontWeight.w600,
+              style: context.textStyles.titleLarge?.copyWith(
+                color: AppColors.navy,
+                fontWeight: FontWeight.w700,
               ),
             ),
           ),
@@ -1125,96 +1055,56 @@ class _EventCardState extends State<EventCard>
             );
           },
           child: Container(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                    AppColors.surface,
-                    AppColors.forestGreen,
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
+              color: AppColors.surface,
               borderRadius: BorderRadius.circular(AppRadius.lg),
-              border: Border.all(
-                color: AppColors.surfaceLight,
-              ),
+              border: Border.all(color: AppColors.border),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.navy.withValues(alpha: 0.05),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Animated time indicator
-                Container(
-                  width: 5,
-                  height: 75,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [accentColor, accentColor.withValues(alpha: 0.5)],
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                    ),
-                    borderRadius: BorderRadius.circular(3),
-                    boxShadow: [
-                      BoxShadow(
-                        color: accentColor.withValues(alpha: 0.4),
-                        blurRadius: 6,
-                        spreadRadius: 0,
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 16),
-                // Content
+                const SizedBox(width: 8),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 5,
-                            ),
-                            decoration: BoxDecoration(
-                              color: accentColor.withValues(alpha: 0.3),
-                              borderRadius: BorderRadius.circular(AppRadius.sm),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  Icons.access_time_rounded,
-                                  color: accentColor,
-                                  size: 14,
-                                ),
-                                const SizedBox(width: 5),
-                                Text(
-                                  _formatTime(widget.event.date),
-                                  style: context.textStyles.labelSmall
-                                      ?.copyWith(
-                                        color: accentColor,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                ),
-                              ],
-                            ),
+                          Text(
+                            widget.event.title,
+                            style: context.textStyles.titleLarge?.copyWith(fontWeight: FontWeight.w700),
                           ),
+                          Icon(Icons.more_vert, size: 16, color: AppColors.textMuted),
                         ],
-                      ),
-                      const SizedBox(height: 10),
-                      Text(
-                        widget.event.title,
-                        style: context.textStyles.headlineSmall,
                       ),
                       const SizedBox(height: 6),
                       Text(
                         widget.event.description,
-                        style: context.textStyles.bodyMedium?.withColor(
-                          AppColors.textSecondary,
-                        ),
+                        style: context.textStyles.bodyMedium?.withColor(AppColors.textSecondary),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 8),
+                      // Time badge
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: AppColors.green.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          _formatTime(widget.event.date),
+                          style: context.textStyles.labelSmall?.copyWith(color: AppColors.green, fontWeight: FontWeight.w600),
+                        ),
                       ),
                     ],
                   ),
