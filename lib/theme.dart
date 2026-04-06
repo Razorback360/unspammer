@@ -49,7 +49,7 @@ extension TextStyleExtensions on TextStyle {
 
 /// Color palette based on user requirements
 class AppColors {
-  // Primary palette
+  // Original palette
   static const Color gold = Color(0xFFf7c53e);
   static const Color goldMuted = Color(0xFFe6c959);
   static const Color olive = Color(0xFFbdba66);
@@ -60,7 +60,7 @@ class AppColors {
   static const Color surface = Color(0xFF0e5a61);
   static const Color surfaceLight = Color(0xFF137178);
 
-  // Dark greens for accents
+  // Dark green accent
   static const Color forestGreen = Color(0xFF224723);
 
   // Text & neutrals
@@ -68,10 +68,29 @@ class AppColors {
   static const Color textSecondary = Color(0xFF81a1a4);
   static const Color textMuted = Color(0xFF5d8a8e);
 
-  // Status
-  static const Color important = Color(0xFFf7c53e);
-  static const Color success = Color(0xFFbdba66);
+  // Status-like
+  static const Color important = gold;
+  static const Color success = olive;
   static const Color error = Color(0xFFe57373);
+
+  // Semantic aliases
+  static const Color primary = gold;
+  static const Color secondary = olive;
+  static const Color accent = gold;
+  static const Color accentStrong = goldMuted;
+
+  static const Color border = surfaceLight;
+  static const Color hover = surfaceLight;
+  static const Color pressed = goldMuted;
+  static const Color disabled = textMuted;
+
+  // Compatibility aliases
+  static const Color emerald = olive;
+  static const Color navy = background;
+  static const Color mist = textPrimary;
+  static const Color graphite = textMuted;
+  static const Color pine = forestGreen;
+  static const Color amber = goldMuted;
 }
 
 ThemeData get appTheme => ThemeData(
@@ -79,12 +98,12 @@ ThemeData get appTheme => ThemeData(
   brightness: Brightness.dark,
   scaffoldBackgroundColor: AppColors.background,
   colorScheme: const ColorScheme.dark(
-    primary: AppColors.gold,
-    secondary: AppColors.olive,
+    primary: AppColors.primary,
+    secondary: AppColors.secondary,
     surface: AppColors.surface,
     error: AppColors.error,
     onPrimary: AppColors.background,
-    onSecondary: AppColors.textPrimary,
+    onSecondary: AppColors.mist,
     onSurface: AppColors.textPrimary,
   ),
   appBarTheme: AppBarTheme(
@@ -109,26 +128,29 @@ ThemeData get appTheme => ThemeData(
   ),
   navigationBarTheme: NavigationBarThemeData(
     backgroundColor: AppColors.surface,
-    indicatorColor: AppColors.gold.withValues(alpha: 0.15),
+    indicatorColor: AppColors.accent.withValues(alpha: 0.15),
     labelTextStyle: WidgetStateProperty.resolveWith((states) {
       if (states.contains(WidgetState.selected)) {
         return GoogleFonts.spaceGrotesk(
           fontSize: 12,
           fontWeight: FontWeight.w600,
-          color: AppColors.gold,
+          color: AppColors.accent,
         );
       }
       return GoogleFonts.spaceGrotesk(
         fontSize: 12,
         fontWeight: FontWeight.w500,
-        color: AppColors.textSecondary,
+        color: AppColors.textSecondary.withValues(alpha: 0.7),
       );
     }),
     iconTheme: WidgetStateProperty.resolveWith((states) {
       if (states.contains(WidgetState.selected)) {
-        return const IconThemeData(color: AppColors.gold, size: 24);
+        return const IconThemeData(color: AppColors.accent, size: 24);
       }
-      return const IconThemeData(color: AppColors.textSecondary, size: 24);
+      return IconThemeData(
+        color: AppColors.textSecondary.withValues(alpha: 0.7),
+        size: 24,
+      );
     }),
   ),
   textTheme: _buildTextTheme(),

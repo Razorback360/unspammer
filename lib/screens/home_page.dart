@@ -12,31 +12,11 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage>
-    with SingleTickerProviderStateMixin {
+class _HomePageState extends State<HomePage> {
   int _currentIndex = 0;
-  late AnimationController _pageTransitionController;
-
-  final List<Widget> _pages = [const InboxPage(), const CalendarPage()];
-
-  @override
-  void initState() {
-    super.initState();
-    _pageTransitionController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 400),
-    );
-  }
-
-  @override
-  void dispose() {
-    _pageTransitionController.dispose();
-    super.dispose();
-  }
 
   void _onTabChanged(int index) {
     if (_currentIndex != index) {
-      _pageTransitionController.forward(from: 0);
       setState(() => _currentIndex = index);
     }
   }
@@ -45,30 +25,12 @@ class _HomePageState extends State<HomePage>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 300),
-        transitionBuilder: (child, animation) {
-          return FadeTransition(
-            opacity: animation,
-            child: SlideTransition(
-              position:
-                  Tween<Offset>(
-                    begin: const Offset(0, 0.02),
-                    end: Offset.zero,
-                  ).animate(
-                    CurvedAnimation(
-                      parent: animation,
-                      curve: Curves.easeOutCubic,
-                    ),
-                  ),
-              child: child,
-            ),
-          );
-        },
-        child: KeyedSubtree(
-          key: ValueKey(_currentIndex),
-          child: _pages[_currentIndex],
-        ),
+      body: IndexedStack(
+        index: _currentIndex,
+        children: [
+          TickerMode(enabled: _currentIndex == 0, child: const InboxPage()),
+          TickerMode(enabled: _currentIndex == 1, child: const CalendarPage()),
+        ],
       ),
       bottomNavigationBar: _GlassNavBar(
         currentIndex: _currentIndex,
@@ -91,19 +53,22 @@ class _GlassNavBar extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [AppColors.surface.withValues(alpha: 0.9), AppColors.surface],
+          colors: [
+            AppColors.surfaceLight.withValues(alpha: 0.65),
+            AppColors.surface,
+          ],
         ),
         border: Border(
           top: BorderSide(
-            color: AppColors.gold.withValues(alpha: 0.15),
+            color: AppColors.accent.withValues(alpha: 0.4),
             width: 1,
           ),
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.3),
-            blurRadius: 20,
-            offset: const Offset(0, -5),
+            color: AppColors.background.withValues(alpha: 0.5),
+            blurRadius: 16,
+            offset: const Offset(0, -3),
           ),
         ],
       ),
@@ -214,26 +179,26 @@ class _AnimatedNavItemState extends State<_AnimatedNavItem>
                 gradient: widget.isSelected
                     ? LinearGradient(
                         colors: [
-                          AppColors.gold.withValues(alpha: 0.25),
-                          AppColors.gold.withValues(alpha: 0.15),
+                          AppColors.accent.withValues(alpha: 0.26),
+                          AppColors.accentStrong.withValues(alpha: 0.2),
                         ],
                       )
                     : null,
                 borderRadius: BorderRadius.circular(AppRadius.full),
                 border: widget.isSelected
                     ? Border.all(
-                        color: AppColors.gold.withValues(
-                          alpha: 0.4 + 0.2 * _glowController.value,
+                        color: AppColors.accent.withValues(
+                          alpha: 0.3 + 0.2 * _glowController.value,
                         ),
                       )
                     : null,
                 boxShadow: widget.isSelected
                     ? [
                         BoxShadow(
-                          color: AppColors.gold.withValues(
-                            alpha: 0.2 + 0.1 * _glowController.value,
+                          color: AppColors.accent.withValues(
+                            alpha: 0.16 + 0.08 * _glowController.value,
                           ),
-                          blurRadius: 12,
+                          blurRadius: 10,
                           spreadRadius: 0,
                         ),
                       ]
@@ -254,8 +219,8 @@ class _AnimatedNavItemState extends State<_AnimatedNavItem>
                             child: Icon(
                               widget.icon,
                               color: Color.lerp(
-                                AppColors.textSecondary,
-                                AppColors.gold,
+                                AppColors.textSecondary.withValues(alpha: 0.7),
+                                AppColors.accent,
                                 value,
                               ),
                               size: 24,
@@ -281,7 +246,7 @@ class _AnimatedNavItemState extends State<_AnimatedNavItem>
                               Text(
                                 widget.label,
                                 style: context.textStyles.labelLarge?.copyWith(
-                                  color: AppColors.gold,
+                                  color: AppColors.accent,
                                   fontWeight: FontWeight.w700,
                                 ),
                               ),
@@ -338,20 +303,20 @@ class _PulsingBadgeState extends State<_PulsingBadge>
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [AppColors.gold, AppColors.goldMuted],
+                colors: [AppColors.accent, AppColors.accentStrong],
               ),
               borderRadius: BorderRadius.circular(10),
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.gold.withValues(alpha: 0.5),
-                  blurRadius: 6,
+                  color: AppColors.accent.withValues(alpha: 0.28),
+                  blurRadius: 4,
                   spreadRadius: 0,
                 ),
               ],
             ),
             child: Text(
               '${widget.count}',
-              style: TextStyle(
+              style: const TextStyle(
                 color: AppColors.background,
                 fontSize: 10,
                 fontWeight: FontWeight.w700,

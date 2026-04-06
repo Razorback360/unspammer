@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -53,12 +54,14 @@ class _InboxPageState extends State<InboxPage> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
+    final filteredEmails = _filteredEmails;
+
     return Scaffold(
       backgroundColor: AppColors.background,
       body: Stack(
         children: [
           // Animated background gradients
-          _AnimatedBackgroundOrbs(),
+          const RepaintBoundary(child: _AnimatedBackgroundOrbs()),
 
           SafeArea(
             child: CustomScrollView(
@@ -71,42 +74,26 @@ class _InboxPageState extends State<InboxPage> with TickerProviderStateMixin {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                ShaderMask(
-                                  shaderCallback: (bounds) => LinearGradient(
-                                    colors: [
-                                      AppColors.textPrimary,
-                                      AppColors.gold,
-                                    ],
-                                  ).createShader(bounds),
-                                  child: Text(
-                                    'Inbox',
-                                    style: context.textStyles.displaySmall
-                                        ?.copyWith(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.w700,
-                                        ),
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                _AnimatedCounter(
-                                  count: _filteredEmails
-                                      .where((e) => e.isImportant)
-                                      .length,
-                                  suffix: ' important emails',
-                                ),
-                              ],
-                            ),
-                            _AnimatedNotificationBell(
-                              onTap: () => _showNotification(context),
+                            ShaderMask(
+                              shaderCallback: (bounds) => LinearGradient(
+                                colors: [
+                                  AppColors.textPrimary,
+                                  AppColors.gold,
+                                ],
+                              ).createShader(bounds),
+                              child: Text(
+                                'Inbox',
+                                style: context.textStyles.displaySmall
+                                    ?.copyWith(
+                                      color: AppColors.textPrimary,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                              ),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 24),
+                        const SizedBox(height: 20),
                         _FilterChips(
                           selectedIndex: _selectedFilter,
                           onSelected: _changeFilter,
@@ -121,18 +108,26 @@ class _InboxPageState extends State<InboxPage> with TickerProviderStateMixin {
                   padding: const EdgeInsets.all(20),
                   sliver: SliverList(
                     delegate: SliverChildBuilderDelegate((context, index) {
-                      final email = _filteredEmails[index];
+                      final email = filteredEmails[index];
                       return AnimatedBuilder(
                         animation: _animController,
                         builder: (context, child) {
-                          final delay = (index * 0.15).clamp(0.0, 0.6);
-                          final progress = Curves.easeOutBack.transform(
-                            (((_animController.value - delay) / (1 - delay))
-                                .clamp(0.0, 1.0)),
-                          );
+                          final delay = (index * 0.15).clamp(0.0, 0.7);
+                          final normalized = (_animController.value - delay) /
+                              (1.0 - delay);
+                          final safeProgress = normalized.isFinite
+                              ? normalized.clamp(0.0, 1.0).toDouble()
+                              : 0.0;
+                          final motion =
+                              Curves.easeOutCubic.transform(safeProgress);
+                          final opacityProgress =
+                              motion.clamp(0.0, 1.0).toDouble();
                           return Transform.translate(
-                            offset: Offset(0, 30 * (1 - progress)),
-                            child: Opacity(opacity: progress, child: child),
+                            offset: Offset(0, 24 * (1 - motion)),
+                            child: Opacity(
+                              opacity: opacityProgress,
+                              child: child,
+                            ),
                           );
                         },
                         child: Padding(
@@ -143,7 +138,7 @@ class _InboxPageState extends State<InboxPage> with TickerProviderStateMixin {
                           ),
                         ),
                       );
-                    }, childCount: _filteredEmails.length),
+                    }, childCount: filteredEmails.length),
                   ),
                 ),
               ],
@@ -218,6 +213,8 @@ class _InboxPageState extends State<InboxPage> with TickerProviderStateMixin {
 }
 
 class _AnimatedBackgroundOrbs extends StatefulWidget {
+  const _AnimatedBackgroundOrbs();
+
   @override
   State<_AnimatedBackgroundOrbs> createState() =>
       _AnimatedBackgroundOrbsState();
@@ -330,6 +327,7 @@ class _AnimatedNotificationBell extends StatefulWidget {
 class _AnimatedNotificationBellState extends State<_AnimatedNotificationBell>
     with SingleTickerProviderStateMixin {
   late AnimationController _wiggleController;
+  Timer? _wiggleTimer;
 
   @override
   void initState() {
@@ -338,22 +336,23 @@ class _AnimatedNotificationBellState extends State<_AnimatedNotificationBell>
       vsync: this,
       duration: const Duration(milliseconds: 500),
     );
-    _startWiggle();
+    _startWiggleLoop();
   }
 
-  void _startWiggle() async {
-    await Future.delayed(const Duration(seconds: 3));
-    if (mounted) {
-      _wiggleController.forward().then((_) {
-        _wiggleController.reverse().then((_) {
-          _startWiggle();
-        });
+  void _startWiggleLoop() {
+    _wiggleTimer = Timer.periodic(const Duration(seconds: 3), (_) {
+      if (!mounted) return;
+      _wiggleController.forward(from: 0).then((_) {
+        if (mounted) {
+          _wiggleController.reverse();
+        }
       });
-    }
+    });
   }
 
   @override
   void dispose() {
+    _wiggleTimer?.cancel();
     _wiggleController.dispose();
     super.dispose();
   }
@@ -533,16 +532,14 @@ class _FilterChips extends StatelessWidget {
       Icons.inventory_2_rounded,
     ];
 
-    return Row(
+    return Wrap(
+      spacing: 12,
+      runSpacing: 10,
       children: List.generate(filters.length, (index) {
         final isSelected = selectedIndex == index;
-        return Padding(
-          padding: const EdgeInsets.only(right: 12),
-          child: GestureDetector(
-            onTap: () => onSelected(index),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 300),
-              curve: Curves.easeOutCubic,
+        return GestureDetector(
+          onTap: () => onSelected(index),
+            child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
               decoration: BoxDecoration(
                 gradient: isSelected
@@ -595,7 +592,6 @@ class _FilterChips extends StatelessWidget {
                 ],
               ),
             ),
-          ),
         );
       }),
     );
@@ -643,7 +639,7 @@ class _EmailCardState extends State<EmailCard> {
                   ]
                 : [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.2),
+                      color: AppColors.background.withValues(alpha: 0.35),
                       blurRadius: 10,
                       offset: const Offset(0, 4),
                     ),
@@ -775,11 +771,6 @@ class _EmailCardState extends State<EmailCard> {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  // Calendar event indicator
-                  if (email.hasEvent) ...[
-                    const SizedBox(height: 16),
-                    _CalendarEventBadge(),
-                  ],
                 ],
               ),
             ),
@@ -846,87 +837,3 @@ class _ImportantBadge extends StatelessWidget {
   }
 }
 
-class _CalendarEventBadge extends StatefulWidget {
-  @override
-  State<_CalendarEventBadge> createState() => _CalendarEventBadgeState();
-}
-
-class _CalendarEventBadgeState extends State<_CalendarEventBadge>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 2000),
-    )..repeat();
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _controller,
-      builder: (context, child) {
-        return Container(
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                AppColors.olive.withValues(alpha: 0.15),
-                AppColors.oliveDeep.withValues(alpha: 0.1),
-              ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: BorderRadius.circular(AppRadius.md),
-            border: Border.all(color: AppColors.olive.withValues(alpha: 0.3)),
-          ),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: AppColors.olive.withValues(alpha: 0.25),
-                  borderRadius: BorderRadius.circular(AppRadius.sm),
-                ),
-                child: Icon(
-                  Icons.event_rounded,
-                  color: AppColors.olive,
-                  size: 18,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  'Event added to calendar',
-                  style: context.textStyles.labelLarge?.withColor(
-                    AppColors.olive,
-                  ),
-                ),
-              ),
-              Transform.translate(
-                offset: Offset(
-                  3 * math.sin(_controller.value * math.pi * 2),
-                  0,
-                ),
-                child: Icon(
-                  Icons.arrow_forward_rounded,
-                  color: AppColors.olive,
-                  size: 18,
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-}

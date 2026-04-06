@@ -17,6 +17,10 @@ class _CalendarPageState extends State<CalendarPage>
   late DateTime _selectedDate;
   late AnimationController _eventAnimController;
   late AnimationController _backgroundController;
+  late final Map<String, List<CalendarEvent>> _eventsByDay;
+
+  String _dateKey(DateTime date) =>
+      '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
 
   @override
   void initState() {
@@ -31,6 +35,12 @@ class _CalendarPageState extends State<CalendarPage>
       vsync: this,
       duration: const Duration(seconds: 10),
     )..repeat();
+    _eventsByDay = <String, List<CalendarEvent>>{};
+    for (final event in dummyEvents) {
+      _eventsByDay.putIfAbsent(_dateKey(event.date), () => <CalendarEvent>[]).add(
+        event,
+      );
+    }
   }
 
   @override
@@ -41,29 +51,30 @@ class _CalendarPageState extends State<CalendarPage>
   }
 
   List<CalendarEvent> _getEventsForDate(DateTime date) {
-    return dummyEvents
-        .where(
-          (event) =>
-              event.date.year == date.year &&
-              event.date.month == date.month &&
-              event.date.day == date.day,
-        )
-        .toList();
-  }
-
-  bool _hasEventsOnDate(DateTime date) {
-    return dummyEvents.any(
-      (event) =>
-          event.date.year == date.year &&
-          event.date.month == date.month &&
-          event.date.day == date.day,
+    return List<CalendarEvent>.unmodifiable(
+      _eventsByDay[_dateKey(date)] ?? const <CalendarEvent>[],
     );
   }
 
+  bool _hasEventsOnDate(DateTime date) {
+    return _eventsByDay.containsKey(_dateKey(date));
+  }
+
   void _selectDate(DateTime date) {
+    if (_selectedDate.year == date.year &&
+        _selectedDate.month == date.month &&
+        _selectedDate.day == date.day) {
+      return;
+    }
     setState(() => _selectedDate = date);
     _eventAnimController.reset();
     _eventAnimController.forward();
+  }
+
+  void _jumpToToday() {
+    final now = DateTime.now();
+    setState(() => _focusedMonth = DateTime(now.year, now.month));
+    _selectDate(now);
   }
 
   @override
@@ -78,61 +89,61 @@ class _CalendarPageState extends State<CalendarPage>
           _AnimatedCalendarBackground(controller: _backgroundController),
 
           SafeArea(
-            child: Column(
+            child: Stack(
               children: [
-                // Header
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                ListView(
+                  physics: const BouncingScrollPhysics(),
+                  children: [
+                    // Header
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          ShaderMask(
-                            shaderCallback: (bounds) => LinearGradient(
-                              colors: [
-                                AppColors.textPrimary,
-                                AppColors.gold.withValues(alpha: 0.8),
-                              ],
-                            ).createShader(bounds),
-                            child: Text(
-                              'Calendar',
-                              style: context.textStyles.displaySmall?.copyWith(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w700,
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              ShaderMask(
+                                shaderCallback: (bounds) => LinearGradient(
+                                  colors: [
+                                    AppColors.textPrimary,
+                                    AppColors.gold.withValues(alpha: 0.8),
+                                  ],
+                                ).createShader(bounds),
+                                child: Text(
+                                  'Calendar',
+                                  style: context.textStyles.displaySmall
+                                      ?.copyWith(
+                                        color: AppColors.textPrimary,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                ),
                               ),
-                            ),
+                              const SizedBox(height: 4),
+                              _AnimatedEventCount(count: dummyEvents.length),
+                            ],
                           ),
-                          const SizedBox(height: 4),
-                          _AnimatedEventCount(count: dummyEvents.length),
+                          _AnimatedTodayButton(onTap: _jumpToToday),
                         ],
                       ),
-                      _AnimatedTodayButton(
-                        onTap: () => setState(() {
-                          _focusedMonth = DateTime.now();
-                          _selectDate(DateTime.now());
-                        }),
-                      ),
-                    ],
-                  ),
+                    ),
+                    const SizedBox(height: 24),
+
+                    // Calendar
+                    _CalendarWidget(
+                      focusedMonth: _focusedMonth,
+                      selectedDate: _selectedDate,
+                      hasEventsOnDate: _hasEventsOnDate,
+                      onDateSelected: _selectDate,
+                      onMonthChanged: (month) =>
+                          setState(() => _focusedMonth = month),
+                    ),
+
+                    // Keep room so content remains visible above the panel.
+                    const SizedBox(height: 260),
+                  ],
                 ),
-                const SizedBox(height: 24),
-
-                // Calendar
-                _CalendarWidget(
-                  focusedMonth: _focusedMonth,
-                  selectedDate: _selectedDate,
-                  hasEventsOnDate: _hasEventsOnDate,
-                  onDateSelected: _selectDate,
-                  onMonthChanged: (month) =>
-                      setState(() => _focusedMonth = month),
-                ),
-
-                const SizedBox(height: 24),
-
-                // Events for selected date
-                Expanded(
+                Positioned.fill(
                   child: _EventsPanel(
                     selectedDate: _selectedDate,
                     events: selectedEvents,
@@ -367,8 +378,8 @@ class _CalendarWidget extends StatelessWidget {
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.2),
-              blurRadius: 20,
+              color: AppColors.background.withValues(alpha: 0.35),
+              blurRadius: 14,
               offset: const Offset(0, 8),
             ),
           ],
@@ -747,76 +758,113 @@ class _EventsPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            AppColors.surface,
-            AppColors.surfaceLight.withValues(alpha: 0.2),
-          ],
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-        ),
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.3),
-            blurRadius: 20,
-            offset: const Offset(0, -5),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Handle bar
-          Center(
-            child: Container(
-              margin: const EdgeInsets.only(top: 12),
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: AppColors.surfaceLight,
-                borderRadius: BorderRadius.circular(2),
+    return DraggableScrollableSheet(
+      expand: true,
+      minChildSize: 0.22,
+      initialChildSize: 0.34,
+      maxChildSize: 0.9,
+      snap: true,
+      snapSizes: const [0.22, 0.34, 0.62, 0.9],
+      builder: (context, scrollController) {
+        return Container(
+          width: double.infinity,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                AppColors.surface,
+                AppColors.surface,
+              ],
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+            ),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(36)),
+            border: Border(
+              top: BorderSide(
+                color: AppColors.surfaceLight.withValues(alpha: 0.6),
+                width: 1.2,
               ),
             ),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.background.withValues(alpha: 0.45),
+                blurRadius: 16,
+                offset: const Offset(0, -5),
+              ),
+            ],
           ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(24, 20, 24, 16),
-            child: Row(
-              children: [
-                _AnimatedDateBadge(date: selectedDate),
-                const SizedBox(width: 12),
-                Text(
-                  events.isEmpty
-                      ? 'No events'
-                      : '${events.length} event${events.length > 1 ? 's' : ''}',
-                  style: context.textStyles.bodyMedium?.withColor(
-                    AppColors.textSecondary,
-                  ),
+          child: CustomScrollView(
+            controller: scrollController,
+            slivers: [
+              SliverToBoxAdapter(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Handle bar
+                    Center(
+                      child: Container(
+                        margin: const EdgeInsets.only(top: 12),
+                        width: 40,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: AppColors.surfaceLight,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(24, 20, 24, 16),
+                      child: Row(
+                        children: [
+                          _AnimatedDateBadge(date: selectedDate),
+                          const SizedBox(width: 12),
+                          Text(
+                            events.isEmpty
+                                ? 'No events'
+                                : '${events.length} event${events.length > 1 ? 's' : ''}',
+                            style: context.textStyles.bodyMedium?.withColor(
+                              AppColors.textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-          ),
-          Expanded(
-            child: events.isEmpty
-                ? _EmptyEventsView()
-                : ListView.builder(
-                    padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+              ),
+              if (events.isEmpty)
+                SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: _EmptyEventsView(),
+                )
+              else
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+                  sliver: SliverList.builder(
                     itemCount: events.length,
                     itemBuilder: (context, index) {
                       return AnimatedBuilder(
                         animation: animController,
                         builder: (context, child) {
                           final delay = (index * 0.2).clamp(0.0, 0.6);
-                          final progress = Curves.easeOutBack.transform(
-                            (((animController.value - delay) / (1 - delay))
-                                .clamp(0.0, 1.0)),
+                          final normalized =
+                              ((animController.value - delay) / (1 - delay));
+                          final safeNormalized = normalized.isFinite
+                              ? normalized.clamp(0.0, 1.0).toDouble()
+                              : 0.0;
+                          final motionProgress = Curves.easeOutBack.transform(
+                            safeNormalized,
                           );
+                          final safeMotion = motionProgress.isFinite
+                              ? motionProgress
+                              : 0.0;
+                          final opacityProgress =
+                              safeMotion.clamp(0.0, 1.0).toDouble();
                           return Transform.translate(
-                            offset: Offset(0, 20 * (1 - progress)),
-                            child: Opacity(opacity: progress, child: child),
+                            offset: Offset(0, 20 * (1 - safeMotion)),
+                            child: Opacity(
+                              opacity: opacityProgress,
+                              child: child,
+                            ),
                           );
                         },
                         child: Padding(
@@ -826,9 +874,11 @@ class _EventsPanel extends StatelessWidget {
                       );
                     },
                   ),
+                ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 }
@@ -900,12 +950,12 @@ class _AnimatedDateBadgeState extends State<_AnimatedDateBadge>
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
-                  AppColors.gold.withValues(alpha: 0.2),
-                  AppColors.goldMuted.withValues(alpha: 0.1),
+                  AppColors.gold.withValues(alpha: 0.36),
+                  AppColors.goldMuted.withValues(alpha: 0.28),
                 ],
               ),
               borderRadius: BorderRadius.circular(AppRadius.full),
-              border: Border.all(color: AppColors.gold.withValues(alpha: 0.3)),
+              border: Border.all(color: AppColors.gold.withValues(alpha: 0.55)),
             ),
             child: Text(
               _formatDate(widget.date),
@@ -1079,15 +1129,15 @@ class _EventCardState extends State<EventCard>
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
-                  AppColors.background,
-                  AppColors.surface.withValues(alpha: 0.8),
+                    AppColors.surface,
+                    AppColors.forestGreen,
                 ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
               borderRadius: BorderRadius.circular(AppRadius.lg),
               border: Border.all(
-                color: AppColors.surfaceLight.withValues(alpha: 0.5),
+                color: AppColors.surfaceLight,
               ),
             ),
             child: Row(
@@ -1127,7 +1177,7 @@ class _EventCardState extends State<EventCard>
                               vertical: 5,
                             ),
                             decoration: BoxDecoration(
-                              color: accentColor.withValues(alpha: 0.15),
+                              color: accentColor.withValues(alpha: 0.3),
                               borderRadius: BorderRadius.circular(AppRadius.sm),
                             ),
                             child: Row(
@@ -1169,8 +1219,6 @@ class _EventCardState extends State<EventCard>
                     ],
                   ),
                 ),
-                // Auto-generated badge
-                _AutoBadge(color: accentColor),
               ],
             ),
           ),
@@ -1189,73 +1237,3 @@ class _EventCardState extends State<EventCard>
   }
 }
 
-class _AutoBadge extends StatefulWidget {
-  final Color color;
-  const _AutoBadge({required this.color});
-
-  @override
-  State<_AutoBadge> createState() => _AutoBadgeState();
-}
-
-class _AutoBadgeState extends State<_AutoBadge>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _sparkleController;
-
-  @override
-  void initState() {
-    super.initState();
-    _sparkleController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1500),
-    )..repeat();
-  }
-
-  @override
-  void dispose() {
-    _sparkleController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _sparkleController,
-      builder: (context, child) {
-        return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                AppColors.olive.withValues(alpha: 0.2),
-                AppColors.olive.withValues(alpha: 0.1),
-              ],
-            ),
-            borderRadius: BorderRadius.circular(AppRadius.sm),
-            border: Border.all(color: AppColors.olive.withValues(alpha: 0.3)),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Transform.rotate(
-                angle: _sparkleController.value * math.pi * 2,
-                child: Icon(
-                  Icons.auto_awesome_rounded,
-                  color: AppColors.olive,
-                  size: 14,
-                ),
-              ),
-              const SizedBox(width: 4),
-              Text(
-                'Auto',
-                style: context.textStyles.labelSmall?.copyWith(
-                  color: AppColors.olive,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-}
