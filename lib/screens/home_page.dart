@@ -23,20 +23,25 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: IndexedStack(
-        index: _currentIndex,
-        children: [
-          TickerMode(enabled: _currentIndex == 0, child: const InboxPage()),
-          TickerMode(enabled: _currentIndex == 1, child: const CalendarPage()),
-        ],
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
-      floatingActionButton: _GlassNavBar(
-        currentIndex: _currentIndex,
-        onTap: _onTabChanged,
-      ),
+    return ValueListenableBuilder<ThemeMode>(
+      valueListenable: AppColors.themeModeNotifier,
+      builder: (context, themeMode, _) {
+        return Scaffold(
+          backgroundColor: AppColors.background,
+          body: IndexedStack(
+            index: _currentIndex,
+            children: [
+              TickerMode(enabled: _currentIndex == 0, child: const InboxPage()),
+              TickerMode(enabled: _currentIndex == 1, child: const CalendarPage()),
+            ],
+          ),
+          floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+          floatingActionButton: _GlassNavBar(
+            currentIndex: _currentIndex,
+            onTap: _onTabChanged,
+          ),
+        );
+      },
     );
   }
 }
@@ -308,7 +313,7 @@ class _PulsingBadgeState extends State<_PulsingBadge>
             ),
             child: Text(
               '${widget.count}',
-              style: const TextStyle(
+              style: TextStyle(
                 color: AppColors.background,
                 fontSize: 10,
                 fontWeight: FontWeight.w700,

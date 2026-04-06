@@ -83,7 +83,15 @@ class _InboxPageState extends State<InboxPage> with TickerProviderStateMixin {
                             const SizedBox(width: 8),
                             const Text('👋', style: TextStyle(fontSize: 24)),
                             const Spacer(),
-                            _AnimatedNotificationBell(onTap: () => _showNotification(context)),
+                            IconButton(
+                              icon: Icon(
+                                AppColors.isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
+                                color: AppColors.textPrimary,
+                              ),
+                              onPressed: () {
+                                AppColors.toggleTheme();
+                              },
+                            ),
                           ],
                         ),
                         const SizedBox(height: 20),
@@ -142,372 +150,7 @@ class _InboxPageState extends State<InboxPage> with TickerProviderStateMixin {
     );
   }
 
-  void _showNotification(BuildContext context) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        behavior: SnackBarBehavior.floating,
-        margin: const EdgeInsets.all(20),
-        content: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                AppColors.surface.withValues(alpha: 0.95),
-                AppColors.surfaceLight.withValues(alpha: 0.9),
-              ],
-            ),
-            borderRadius: BorderRadius.circular(AppRadius.lg),
-            border: Border.all(
-              color: AppColors.gold.withValues(alpha: 0.5),
-              width: 1.5,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.gold.withValues(alpha: 0.2),
-                blurRadius: 20,
-                spreadRadius: 0,
-              ),
-            ],
-          ),
-          child: Row(
-            children: [
-              _PulsingIcon(
-                icon: Icons.notifications_active_rounded,
-                color: AppColors.gold,
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'New Important Email',
-                      style: context.textStyles.titleMedium,
-                    ),
-                    Text(
-                      'Hackathon starts tomorrow!',
-                      style: context.textStyles.bodySmall?.withColor(
-                        AppColors.textSecondary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-        duration: const Duration(seconds: 3),
-      ),
-    );
-  }
-}
 
-class _AnimatedBackgroundOrbs extends StatefulWidget {
-  const _AnimatedBackgroundOrbs();
-
-  @override
-  State<_AnimatedBackgroundOrbs> createState() =>
-      _AnimatedBackgroundOrbsState();
-}
-
-class _AnimatedBackgroundOrbsState extends State<_AnimatedBackgroundOrbs>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 8),
-    )..repeat();
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _controller,
-      builder: (context, child) {
-        return CustomPaint(
-          painter: _OrbsPainter(_controller.value),
-          size: Size.infinite,
-        );
-      },
-    );
-  }
-}
-
-class _OrbsPainter extends CustomPainter {
-  final double progress;
-  _OrbsPainter(this.progress);
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()..style = PaintingStyle.fill;
-
-    // Orb 1 - Top right gold glow
-    final orb1Center = Offset(
-      size.width * 0.8 + math.sin(progress * 2 * math.pi) * 30,
-      size.height * 0.15 + math.cos(progress * 2 * math.pi) * 20,
-    );
-    paint.shader = RadialGradient(
-      colors: [
-        AppColors.gold.withValues(alpha: 0.15),
-        AppColors.gold.withValues(alpha: 0),
-      ],
-    ).createShader(Rect.fromCircle(center: orb1Center, radius: 150));
-    canvas.drawCircle(orb1Center, 150, paint);
-
-    // Orb 2 - Bottom left olive glow
-    final orb2Center = Offset(
-      size.width * 0.2 + math.cos(progress * 2 * math.pi) * 25,
-      size.height * 0.7 + math.sin(progress * 2 * math.pi) * 30,
-    );
-    paint.shader = RadialGradient(
-      colors: [
-        AppColors.olive.withValues(alpha: 0.12),
-        AppColors.olive.withValues(alpha: 0),
-      ],
-    ).createShader(Rect.fromCircle(center: orb2Center, radius: 120));
-    canvas.drawCircle(orb2Center, 120, paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant _OrbsPainter oldDelegate) =>
-      oldDelegate.progress != progress;
-}
-
-class _AnimatedCounter extends StatelessWidget {
-  final int count;
-  final String suffix;
-
-  const _AnimatedCounter({required this.count, required this.suffix});
-
-  @override
-  Widget build(BuildContext context) {
-    return TweenAnimationBuilder<int>(
-      tween: IntTween(begin: 0, end: count),
-      duration: const Duration(milliseconds: 800),
-      curve: Curves.easeOutCubic,
-      builder: (context, value, child) => Text(
-        '$value$suffix',
-        style: context.textStyles.bodyMedium?.withColor(
-          AppColors.textSecondary,
-        ),
-      ),
-    );
-  }
-}
-
-class _AnimatedNotificationBell extends StatefulWidget {
-  final VoidCallback onTap;
-  const _AnimatedNotificationBell({required this.onTap});
-
-  @override
-  State<_AnimatedNotificationBell> createState() =>
-      _AnimatedNotificationBellState();
-}
-
-class _AnimatedNotificationBellState extends State<_AnimatedNotificationBell>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _wiggleController;
-  Timer? _wiggleTimer;
-
-  @override
-  void initState() {
-    super.initState();
-    _wiggleController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 500),
-    );
-    _startWiggleLoop();
-  }
-
-  void _startWiggleLoop() {
-    _wiggleTimer = Timer.periodic(const Duration(seconds: 3), (_) {
-      if (!mounted) return;
-      _wiggleController.forward(from: 0).then((_) {
-        if (mounted) {
-          _wiggleController.reverse();
-        }
-      });
-    });
-  }
-
-  @override
-  void dispose() {
-    _wiggleTimer?.cancel();
-    _wiggleController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: widget.onTap,
-      child: AnimatedBuilder(
-        animation: _wiggleController,
-        builder: (context, child) {
-          final wiggle = math.sin(_wiggleController.value * math.pi * 4) * 0.1;
-          return Transform.rotate(angle: wiggle, child: child);
-        },
-        child: Container(
-          width: 52,
-          height: 52,
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                AppColors.surface,
-                AppColors.surfaceLight.withValues(alpha: 0.5),
-              ],
-            ),
-            borderRadius: BorderRadius.circular(AppRadius.md),
-            border: Border.all(
-              color: AppColors.surfaceLight.withValues(alpha: 0.5),
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.gold.withValues(alpha: 0.1),
-                blurRadius: 15,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              const Icon(
-                Icons.notifications_none_rounded,
-                color: AppColors.textPrimary,
-                size: 26,
-              ),
-              Positioned(top: 10, right: 11, child: _PulsingDot()),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _PulsingDot extends StatefulWidget {
-  @override
-  State<_PulsingDot> createState() => _PulsingDotState();
-}
-
-class _PulsingDotState extends State<_PulsingDot>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1500),
-    )..repeat(reverse: true);
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _controller,
-      builder: (context, child) {
-        final scale = 1.0 + _controller.value * 0.3;
-        return Transform.scale(
-          scale: scale,
-          child: Container(
-            width: 10,
-            height: 10,
-            decoration: BoxDecoration(
-              color: AppColors.gold,
-              shape: BoxShape.circle,
-              border: Border.all(color: AppColors.surface, width: 2),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.gold.withValues(
-                    alpha: 0.6 - _controller.value * 0.4,
-                  ),
-                  blurRadius: 6,
-                  spreadRadius: 1,
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-}
-
-class _PulsingIcon extends StatefulWidget {
-  final IconData icon;
-  final Color color;
-  const _PulsingIcon({required this.icon, required this.color});
-
-  @override
-  State<_PulsingIcon> createState() => _PulsingIconState();
-}
-
-class _PulsingIconState extends State<_PulsingIcon>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1000),
-    )..repeat(reverse: true);
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _controller,
-      builder: (context, child) {
-        return Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: widget.color.withValues(alpha: 0.15),
-            borderRadius: BorderRadius.circular(AppRadius.sm),
-            boxShadow: [
-              BoxShadow(
-                color: widget.color.withValues(alpha: 0.3 * _controller.value),
-                blurRadius: 12,
-                spreadRadius: 2,
-              ),
-            ],
-          ),
-          child: Icon(widget.icon, color: widget.color, size: 22),
-        );
-      },
-    );
-  }
 }
 
 class _FilterChips extends StatelessWidget {
@@ -519,59 +162,68 @@ class _FilterChips extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final filters = ['All', 'Important', 'Other'];
-    final icons = [
-      Icons.all_inbox_rounded,
-      Icons.star_rounded,
-      Icons.inventory_2_rounded,
-    ];
+    final alignment = selectedIndex == 0 
+        ? Alignment.centerLeft 
+        : selectedIndex == 1 
+            ? Alignment.center 
+            : Alignment.centerRight;
 
-    return Wrap(
-      spacing: 12,
-      runSpacing: 10,
-      children: List.generate(filters.length, (index) {
-        final isSelected = selectedIndex == index;
-        return GestureDetector(
-          onTap: () => onSelected(index),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+    return Container(
+      height: 48,
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: AppColors.isDark ? Colors.black.withValues(alpha: 0.25) : AppColors.navy.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        border: Border.all(
+          color: AppColors.isDark ? Colors.white.withValues(alpha: 0.05) : AppColors.navy.withValues(alpha: 0.1),
+        ),
+      ),
+      child: Stack(
+        children: [
+          AnimatedAlign(
+            duration: const Duration(milliseconds: 250),
+            curve: Curves.easeOutCubic,
+            alignment: alignment,
+            child: FractionallySizedBox(
+              widthFactor: 1 / 3,
+              child: Container(
                 decoration: BoxDecoration(
-                color: isSelected ? AppColors.surface : AppColors.background,
-                borderRadius: BorderRadius.circular(AppRadius.md),
-                border: Border.all(
-                  color: isSelected
-                      ? AppColors.border
-                      : Colors.transparent,
-                  width: 1.0,
-                ),
-                boxShadow: isSelected
-                    ? [
-                        BoxShadow(
-                          color: AppColors.textPrimary.withValues(alpha: 0.05),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        ),
-                      ]
-                    : null,
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    filters[index],
-                    style: context.textStyles.labelLarge?.copyWith(
-                      color: isSelected
-                          ? AppColors.textPrimary
-                          : AppColors.textSecondary,
-                      fontWeight: isSelected
-                          ? FontWeight.w700
-                          : FontWeight.w500,
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(AppRadius.sm),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.navy.withValues(alpha: 0.08),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
-        );
-      }),
+          ),
+          Row(
+            children: List.generate(filters.length, (index) {
+              final isSelected = selectedIndex == index;
+              return Expanded(
+                child: GestureDetector(
+                  onTap: () => onSelected(index),
+                  behavior: HitTestBehavior.opaque,
+                  child: Center(
+                    child: AnimatedDefaultTextStyle(
+                      duration: const Duration(milliseconds: 200),
+                      style: context.textStyles.labelLarge!.copyWith(
+                        color: isSelected ? AppColors.textPrimary : AppColors.textSecondary,
+                        fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                      ),
+                      child: Text(filters[index]),
+                    ),
+                  ),
+                ),
+              );
+            }),
+          ),
+        ],
+      ),
     );
   }
 }

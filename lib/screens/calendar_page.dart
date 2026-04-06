@@ -150,97 +150,6 @@ class _CalendarPageState extends State<CalendarPage>
   }
 }
 
-class _AnimatedCalendarBackground extends StatelessWidget {
-  final AnimationController controller;
-  const _AnimatedCalendarBackground({required this.controller});
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: controller,
-      builder: (context, child) {
-        return CustomPaint(
-          painter: _CalendarBackgroundPainter(controller.value),
-          size: Size.infinite,
-        );
-      },
-    );
-  }
-}
-
-class _CalendarBackgroundPainter extends CustomPainter {
-  final double progress;
-  _CalendarBackgroundPainter(this.progress);
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()..style = PaintingStyle.fill;
-
-    // Large olive orb
-    final orb1Center = Offset(
-      size.width * 0.9 + math.cos(progress * 2 * math.pi) * 40,
-      size.height * 0.4 + math.sin(progress * 2 * math.pi) * 30,
-    );
-    paint.shader = RadialGradient(
-      colors: [
-        AppColors.olive.withValues(alpha: 0.1),
-        AppColors.olive.withValues(alpha: 0),
-      ],
-    ).createShader(Rect.fromCircle(center: orb1Center, radius: 200));
-    canvas.drawCircle(orb1Center, 200, paint);
-
-    // Gold accent orb
-    final orb2Center = Offset(
-      size.width * 0.1 + math.sin(progress * 2 * math.pi) * 20,
-      size.height * 0.2 + math.cos(progress * 2 * math.pi) * 25,
-    );
-    paint.shader = RadialGradient(
-      colors: [
-        AppColors.gold.withValues(alpha: 0.08),
-        AppColors.gold.withValues(alpha: 0),
-      ],
-    ).createShader(Rect.fromCircle(center: orb2Center, radius: 100));
-    canvas.drawCircle(orb2Center, 100, paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant _CalendarBackgroundPainter oldDelegate) =>
-      oldDelegate.progress != progress;
-}
-
-class _AnimatedEventCount extends StatelessWidget {
-  final int count;
-  const _AnimatedEventCount({required this.count});
-
-  @override
-  Widget build(BuildContext context) {
-    return TweenAnimationBuilder<int>(
-      tween: IntTween(begin: 0, end: count),
-      duration: const Duration(milliseconds: 800),
-      curve: Curves.easeOutCubic,
-      builder: (context, value, child) => Row(
-        children: [
-          Container(
-            width: 8,
-            height: 8,
-            decoration: BoxDecoration(
-              color: AppColors.gold,
-              shape: BoxShape.circle,
-            ),
-          ),
-          const SizedBox(width: 8),
-          Text(
-            '$value upcoming events',
-            style: context.textStyles.bodyMedium?.withColor(
-              AppColors.textSecondary,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _AnimatedTodayButton extends StatefulWidget {
   final VoidCallback onTap;
   const _AnimatedTodayButton({required this.onTap});
@@ -704,19 +613,19 @@ class _EventsPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     return DraggableScrollableSheet(
       expand: true,
-      minChildSize: 0.22,
-      initialChildSize: 0.34,
+      minChildSize: 0.32,
+      initialChildSize: 0.39,
       maxChildSize: 0.9,
       snap: true,
-      snapSizes: const [0.22, 0.34, 0.62, 0.9],
+      snapSizes: const [0.32, 0.39, 0.62, 0.9],
       builder: (context, scrollController) {
         return Container(
           width: double.infinity,
           decoration: BoxDecoration(
-            gradient: const LinearGradient(
+            gradient: LinearGradient(
               colors: [
-                AppColors.white,
-                AppColors.white,
+                AppColors.surfaceLight,
+                AppColors.surfaceLight,
               ],
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
@@ -747,7 +656,7 @@ class _EventsPanel extends StatelessWidget {
                         width: 40,
                         height: 4,
                         decoration: BoxDecoration(
-                          color: AppColors.surfaceLight,
+                          color: AppColors.textMuted,
                           borderRadius: BorderRadius.circular(2),
                         ),
                       ),
@@ -758,12 +667,10 @@ class _EventsPanel extends StatelessWidget {
                         children: [
                           _AnimatedDateBadge(date: selectedDate),
                           const SizedBox(width: 12),
-                          Text(
-                            events.isEmpty
-                                ? 'No events'
-                                : '${events.length} event${events.length > 1 ? 's' : ''}',
-                            style: context.textStyles.bodyMedium?.withColor(
-                              AppColors.textSecondary,
+                          Expanded(
+                            child: Container(
+                              height: 1,
+                              color: AppColors.border,
                             ),
                           ),
                         ],
@@ -775,11 +682,14 @@ class _EventsPanel extends StatelessWidget {
               if (events.isEmpty)
                 SliverFillRemaining(
                   hasScrollBody: false,
-                  child: _EmptyEventsView(),
+                  child: Padding(
+                    padding: const EdgeInsets.only(bottom: 100),
+                    child: _EmptyEventsView(),
+                  ),
                 )
               else
                 SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+                  padding: const EdgeInsets.fromLTRB(20, 0, 24, 100),
                   sliver: SliverList.builder(
                     itemCount: events.length,
                     itemBuilder: (context, index) {
@@ -808,9 +718,11 @@ class _EventsPanel extends StatelessWidget {
                             ),
                           );
                         },
-                        child: Padding(
-                          padding: const EdgeInsets.only(bottom: 16),
-                          child: EventCard(event: events[index], index: index),
+                        child: EventCard(
+                          event: events[index],
+                          index: index,
+                          isFirst: index == 0,
+                          isLast: index == events.length - 1,
                         ),
                       );
                     },
@@ -890,7 +802,7 @@ class _AnimatedDateBadgeState extends State<_AnimatedDateBadge>
             child: Text(
               _formatDate(widget.date),
               style: context.textStyles.titleLarge?.copyWith(
-                color: AppColors.navy,
+                color: AppColors.textPrimary,
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -991,7 +903,15 @@ class _EmptyEventsViewState extends State<_EmptyEventsView>
 class EventCard extends StatefulWidget {
   final CalendarEvent event;
   final int index;
-  const EventCard({super.key, required this.event, required this.index});
+  final bool isFirst;
+  final bool isLast;
+  const EventCard({
+    super.key,
+    required this.event,
+    required this.index,
+    this.isFirst = false,
+    this.isLast = false,
+  });
 
   @override
   State<EventCard> createState() => _EventCardState();
@@ -1028,102 +948,159 @@ class _EventCardState extends State<EventCard>
   Widget build(BuildContext context) {
     final accentColor = _accentColors[widget.index % _accentColors.length];
 
-    return GestureDetector(
-      onTapDown: (_) => setState(() => _isPressed = true),
-      onTapUp: (_) => setState(() => _isPressed = false),
-      onTapCancel: () => setState(() => _isPressed = false),
-      child: AnimatedScale(
-        scale: _isPressed ? 0.98 : 1.0,
-        duration: const Duration(milliseconds: 150),
-        child: AnimatedBuilder(
-          animation: _glowController,
-          builder: (context, child) {
-            return Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(AppRadius.lg),
-                boxShadow: [
-                  BoxShadow(
-                    color: accentColor.withValues(
-                      alpha: 0.1 + 0.1 * _glowController.value,
-                    ),
-                    blurRadius: 15,
-                    offset: const Offset(0, 4),
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Time column
+          SizedBox(
+            width: 60,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.start,
+              children: [
+                const SizedBox(height: 18),
+                Text(
+                  _formatTimeHourMinute(widget.event.date),
+                  style: context.textStyles.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
                   ),
-                ],
-              ),
-              child: child,
-            );
-          },
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              borderRadius: BorderRadius.circular(AppRadius.lg),
-              border: Border.all(color: AppColors.border),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.navy.withValues(alpha: 0.05),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
+                ),
+                Text(
+                  _formatTimePeriod(widget.event.date),
+                  style: context.textStyles.labelSmall?.withColor(AppColors.textMuted),
                 ),
               ],
             ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
+          ),
+          
+          // Timeline column
+          SizedBox(
+            width: 30,
+            child: Stack(
+              alignment: Alignment.topCenter,
               children: [
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            widget.event.title,
-                            style: context.textStyles.titleLarge?.copyWith(fontWeight: FontWeight.w700),
-                          ),
-                          Icon(Icons.more_vert, size: 16, color: AppColors.textMuted),
-                        ],
+                // Vertical Line
+                Positioned(
+                  top: widget.isFirst ? 24 : 0,
+                  bottom: widget.isLast ? null : 0,
+                  height: widget.isLast ? 24 : null,
+                  child: Container(
+                    width: 1,
+                    color: AppColors.border,
+                  ),
+                ),
+                // Colored Dot
+                Positioned(
+                  top: 22,
+                  child: Container(
+                    width: 10,
+                    height: 10,
+                    decoration: BoxDecoration(
+                      color: accentColor,
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: AppColors.surfaceLight,
+                        width: 2,
                       ),
-                      const SizedBox(height: 6),
-                      Text(
-                        widget.event.description,
-                        style: context.textStyles.bodyMedium?.withColor(AppColors.textSecondary),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 8),
-                      // Time badge
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: AppColors.green.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
-                          _formatTime(widget.event.date),
-                          style: context.textStyles.labelSmall?.copyWith(color: AppColors.green, fontWeight: FontWeight.w600),
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
                 ),
               ],
             ),
           ),
-        ),
+          
+          // Card column
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: 20),
+              child: GestureDetector(
+                onTapDown: (_) => setState(() => _isPressed = true),
+                onTapUp: (_) => setState(() => _isPressed = false),
+                onTapCancel: () => setState(() => _isPressed = false),
+                child: AnimatedScale(
+                  scale: _isPressed ? 0.98 : 1.0,
+                  duration: const Duration(milliseconds: 150),
+                  child: AnimatedBuilder(
+                    animation: _glowController,
+                    builder: (context, child) {
+                      return Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(AppRadius.lg),
+                          boxShadow: [
+                            BoxShadow(
+                              color: accentColor.withValues(
+                                alpha: 0.1 + 0.1 * _glowController.value,
+                              ),
+                              blurRadius: 15,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: child,
+                      );
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: AppColors.surface,
+                        borderRadius: BorderRadius.circular(AppRadius.lg),
+                        border: Border.all(color: AppColors.border),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.navy.withValues(alpha: 0.05),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  widget.event.title,
+                                  style: context.textStyles.titleLarge?.copyWith(fontWeight: FontWeight.w700),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            widget.event.description,
+                            style: context.textStyles.bodyMedium?.withColor(AppColors.textSecondary),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  String _formatTime(DateTime date) {
+  String _formatTimeHourMinute(DateTime date) {
     final hour = date.hour == 0
         ? 12
         : (date.hour > 12 ? date.hour - 12 : date.hour);
     final minute = date.minute.toString().padLeft(2, '0');
-    final period = date.hour >= 12 ? 'PM' : 'AM';
-    return '$hour:$minute $period';
+    return '$hour:$minute';
+  }
+
+  String _formatTimePeriod(DateTime date) {
+    return date.hour >= 12 ? 'PM' : 'AM';
   }
 }
+
+
+
+
 

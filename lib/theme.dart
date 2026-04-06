@@ -55,54 +55,61 @@ class AppColors {
   static const Color navy = Color(0xFF003E51);
   static const Color white = Color(0xFFFFFFFF);
 
+  // Theme state
+  static final ValueNotifier<ThemeMode> themeModeNotifier = ValueNotifier(ThemeMode.light);
+  static bool get isDark => themeModeNotifier.value == ThemeMode.dark;
+  static void toggleTheme() {
+    themeModeNotifier.value = isDark ? ThemeMode.light : ThemeMode.dark;
+  }
+
   // Derived semantic tokens using only the approved colors (with alpha when needed).
-  static const Color goldMuted = Color(0xFFDAC961);
-  static const Color olive = green;
-  static const Color oliveDeep = green;
-  static const Color forestGreen = green;
+  static Color get goldMuted => gold;
+  static Color get olive => green;
+  static Color get oliveDeep => green;
+  static Color get forestGreen => green;
 
-  static const Color background = Color(0xFFF7F8F9); // Light off-white for breathing room
-  static const Color surface = white;
-  static const Color surfaceLight = white;
+  static Color get background => isDark ? const Color(0xFF0D181D) : const Color(0xFFF7F8F9); // Very dark navy for dark bg
+  static Color get surface => isDark ? const Color(0xFF14242B) : white;
+  static Color get surfaceLight => isDark ? const Color(0xFF1B313A) : white;
 
-  static const Color textPrimary = navy;
-  static const Color textSecondary = Color(0x99003E51);
-  static const Color textMuted = Color(0x66003E51);
+  static Color get textPrimary => isDark ? white : navy;
+  static Color get textSecondary => isDark ? white.withValues(alpha: 0.7) : navy.withValues(alpha: 0.6);
+  static Color get textMuted => isDark ? white.withValues(alpha: 0.4) : navy.withValues(alpha: 0.4);
 
-  static const Color important = gold;
-  static const Color success = green;
-  static const Color error = gold;
+  static Color get important => gold;
+  static Color get success => green;
+  static Color get error => gold;
 
-  static const Color primary = green;
-  static const Color secondary = navy;
-  static const Color accent = gold;
-  static const Color accentStrong = gold;
+  static Color get primary => green;
+  static Color get secondary => isDark ? white : navy;
+  static Color get accent => gold;
+  static Color get accentStrong => gold;
 
-  static const Color border = Color(0x1A003E51);
-  static const Color hover = Color(0x0D003E51);
-  static const Color pressed = Color(0x1ADAC961);
-  static const Color disabled = Color(0x33003E51);
+  static Color get border => isDark ? white.withValues(alpha: 0.1) : navy.withValues(alpha: 0.1);
+  static Color get hover => isDark ? white.withValues(alpha: 0.05) : navy.withValues(alpha: 0.05);
+  static Color get pressed => gold.withValues(alpha: 0.1);
+  static Color get disabled => isDark ? white.withValues(alpha: 0.2) : navy.withValues(alpha: 0.2);
 
   // Compatibility aliases
-  static const Color emerald = green;
-  static const Color mist = white;
-  static const Color graphite = textMuted;
-  static const Color pine = green;
-  static const Color amber = gold;
+  static Color get emerald => green;
+  static Color get mist => white;
+  static Color get graphite => textMuted;
+  static Color get pine => green;
+  static Color get amber => gold;
 }
 
 ThemeData get appTheme => ThemeData(
   useMaterial3: true,
-  brightness: Brightness.light,
+  brightness: AppColors.isDark ? Brightness.dark : Brightness.light,
   scaffoldBackgroundColor: AppColors.background,
-  colorScheme: const ColorScheme.light(
+  colorScheme: (AppColors.isDark ? const ColorScheme.dark() : const ColorScheme.light()).copyWith(
     primary: AppColors.primary,
     secondary: AppColors.secondary,
     surface: AppColors.surface,
     error: AppColors.error,
     onPrimary: AppColors.white,
     onSecondary: AppColors.white,
-    onSurface: AppColors.navy,
+    onSurface: AppColors.textPrimary,
   ),
   appBarTheme: AppBarTheme(
     backgroundColor: Colors.transparent,
@@ -143,7 +150,7 @@ ThemeData get appTheme => ThemeData(
     }),
     iconTheme: WidgetStateProperty.resolveWith((states) {
       if (states.contains(WidgetState.selected)) {
-        return const IconThemeData(color: AppColors.accent, size: 24);
+        return IconThemeData(color: AppColors.accent, size: 24);
       }
       return IconThemeData(
         color: AppColors.textSecondary.withValues(alpha: 0.7),

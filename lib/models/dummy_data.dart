@@ -131,4 +131,11 @@ final List<CalendarEvent> dummyEvents = [
     date: DateTime.now(),
     sourceEmailId: 'e2',
   ),
+  CalendarEvent(
+    id: 'c6',
+    title: 'SWE316 Quiz',
+    description: 'Ch 4, 5, 6 covering design patterns.',
+    date: DateTime.now().add(const Duration(hours: 4)),
+    sourceEmailId: 'e2',
+  ),
 ];
