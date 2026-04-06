@@ -12,68 +12,36 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage>
-    with SingleTickerProviderStateMixin {
+class _HomePageState extends State<HomePage> {
   int _currentIndex = 0;
-  late AnimationController _pageTransitionController;
-
-  final List<Widget> _pages = [const InboxPage(), const CalendarPage()];
-
-  @override
-  void initState() {
-    super.initState();
-    _pageTransitionController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 400),
-    );
-  }
-
-  @override
-  void dispose() {
-    _pageTransitionController.dispose();
-    super.dispose();
-  }
 
   void _onTabChanged(int index) {
     if (_currentIndex != index) {
-      _pageTransitionController.forward(from: 0);
       setState(() => _currentIndex = index);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 300),
-        transitionBuilder: (child, animation) {
-          return FadeTransition(
-            opacity: animation,
-            child: SlideTransition(
-              position:
-                  Tween<Offset>(
-                    begin: const Offset(0, 0.02),
-                    end: Offset.zero,
-                  ).animate(
-                    CurvedAnimation(
-                      parent: animation,
-                      curve: Curves.easeOutCubic,
-                    ),
-                  ),
-              child: child,
-            ),
-          );
-        },
-        child: KeyedSubtree(
-          key: ValueKey(_currentIndex),
-          child: _pages[_currentIndex],
-        ),
-      ),
-      bottomNavigationBar: _GlassNavBar(
-        currentIndex: _currentIndex,
-        onTap: _onTabChanged,
-      ),
+    return ValueListenableBuilder<ThemeMode>(
+      valueListenable: AppColors.themeModeNotifier,
+      builder: (context, themeMode, _) {
+        return Scaffold(
+          backgroundColor: AppColors.background,
+          body: IndexedStack(
+            index: _currentIndex,
+            children: [
+              TickerMode(enabled: _currentIndex == 0, child: const InboxPage()),
+              TickerMode(enabled: _currentIndex == 1, child: const CalendarPage()),
+            ],
+          ),
+          floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+          floatingActionButton: _GlassNavBar(
+            currentIndex: _currentIndex,
+            onTap: _onTabChanged,
+          ),
+        );
+      },
     );
   }
 }
@@ -87,30 +55,24 @@ class _GlassNavBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [AppColors.surface.withValues(alpha: 0.9), AppColors.surface],
-        ),
-        border: Border(
-          top: BorderSide(
-            color: AppColors.gold.withValues(alpha: 0.15),
-            width: 1,
-          ),
-        ),
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(100),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.3),
-            blurRadius: 20,
-            offset: const Offset(0, -5),
+            color: AppColors.navy.withValues(alpha: 0.1),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
       child: SafeArea(
+        bottom: false,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
           child: Row(
+            mainAxisSize: MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
               _AnimatedNavItem(
@@ -118,8 +80,8 @@ class _GlassNavBar extends StatelessWidget {
                 label: 'Inbox',
                 isSelected: currentIndex == 0,
                 onTap: () => onTap(0),
-                badgeCount: 3,
               ),
+              const SizedBox(width: 8),
               _AnimatedNavItem(
                 icon: Icons.calendar_month_rounded,
                 label: 'Calendar',
@@ -214,26 +176,26 @@ class _AnimatedNavItemState extends State<_AnimatedNavItem>
                 gradient: widget.isSelected
                     ? LinearGradient(
                         colors: [
-                          AppColors.gold.withValues(alpha: 0.25),
-                          AppColors.gold.withValues(alpha: 0.15),
+                          AppColors.accent.withValues(alpha: 0.26),
+                          AppColors.accentStrong.withValues(alpha: 0.2),
                         ],
                       )
                     : null,
                 borderRadius: BorderRadius.circular(AppRadius.full),
                 border: widget.isSelected
                     ? Border.all(
-                        color: AppColors.gold.withValues(
-                          alpha: 0.4 + 0.2 * _glowController.value,
+                        color: AppColors.accent.withValues(
+                          alpha: 0.3 + 0.2 * _glowController.value,
                         ),
                       )
                     : null,
                 boxShadow: widget.isSelected
                     ? [
                         BoxShadow(
-                          color: AppColors.gold.withValues(
-                            alpha: 0.2 + 0.1 * _glowController.value,
+                          color: AppColors.accent.withValues(
+                            alpha: 0.16 + 0.08 * _glowController.value,
                           ),
-                          blurRadius: 12,
+                          blurRadius: 10,
                           spreadRadius: 0,
                         ),
                       ]
@@ -254,8 +216,8 @@ class _AnimatedNavItemState extends State<_AnimatedNavItem>
                             child: Icon(
                               widget.icon,
                               color: Color.lerp(
-                                AppColors.textSecondary,
-                                AppColors.gold,
+                                AppColors.textSecondary.withValues(alpha: 0.7),
+                                AppColors.accent,
                                 value,
                               ),
                               size: 24,
@@ -281,7 +243,7 @@ class _AnimatedNavItemState extends State<_AnimatedNavItem>
                               Text(
                                 widget.label,
                                 style: context.textStyles.labelLarge?.copyWith(
-                                  color: AppColors.gold,
+                                  color: AppColors.accent,
                                   fontWeight: FontWeight.w700,
                                 ),
                               ),
@@ -338,13 +300,13 @@ class _PulsingBadgeState extends State<_PulsingBadge>
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [AppColors.gold, AppColors.goldMuted],
+                colors: [AppColors.accent, AppColors.accentStrong],
               ),
               borderRadius: BorderRadius.circular(10),
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.gold.withValues(alpha: 0.5),
-                  blurRadius: 6,
+                  color: AppColors.accent.withValues(alpha: 0.28),
+                  blurRadius: 4,
                   spreadRadius: 0,
                 ),
               ],

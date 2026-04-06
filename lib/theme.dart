@@ -47,44 +47,68 @@ extension TextStyleExtensions on TextStyle {
   TextStyle withSize(double size) => copyWith(fontSize: size);
 }
 
-/// Color palette based on user requirements
+/// Color palette constrained to the approved brand colors.
 class AppColors {
-  // Primary palette
-  static const Color gold = Color(0xFFf7c53e);
-  static const Color goldMuted = Color(0xFFe6c959);
-  static const Color olive = Color(0xFFbdba66);
-  static const Color oliveDeep = Color(0xFF5d6c31);
+  // Approved base colors.
+  static const Color green = Color(0xFF00573F);
+  static const Color gold = Color(0xFFDAC961);
+  static const Color navy = Color(0xFF003E51);
+  static const Color white = Color(0xFFFFFFFF);
 
-  // Backgrounds
-  static const Color background = Color(0xFF0c4f55);
-  static const Color surface = Color(0xFF0e5a61);
-  static const Color surfaceLight = Color(0xFF137178);
+  // Theme state
+  static final ValueNotifier<ThemeMode> themeModeNotifier = ValueNotifier(ThemeMode.light);
+  static bool get isDark => themeModeNotifier.value == ThemeMode.dark;
+  static void toggleTheme() {
+    themeModeNotifier.value = isDark ? ThemeMode.light : ThemeMode.dark;
+  }
 
-  // Dark greens for accents
-  static const Color forestGreen = Color(0xFF224723);
+  // Derived semantic tokens using only the approved colors (with alpha when needed).
+  static Color get goldMuted => gold;
+  static Color get olive => green;
+  static Color get oliveDeep => green;
+  static Color get forestGreen => green;
 
-  // Text & neutrals
-  static const Color textPrimary = Color(0xFFe5eaea);
-  static const Color textSecondary = Color(0xFF81a1a4);
-  static const Color textMuted = Color(0xFF5d8a8e);
+  static Color get background => isDark ? const Color(0xFF0D181D) : const Color(0xFFF7F8F9); // Very dark navy for dark bg
+  static Color get surface => isDark ? const Color(0xFF14242B) : white;
+  static Color get surfaceLight => isDark ? const Color(0xFF1B313A) : white;
 
-  // Status
-  static const Color important = Color(0xFFf7c53e);
-  static const Color success = Color(0xFFbdba66);
-  static const Color error = Color(0xFFe57373);
+  static Color get textPrimary => isDark ? white : navy;
+  static Color get textSecondary => isDark ? white.withValues(alpha: 0.7) : navy.withValues(alpha: 0.6);
+  static Color get textMuted => isDark ? white.withValues(alpha: 0.4) : navy.withValues(alpha: 0.4);
+
+  static Color get important => gold;
+  static Color get success => green;
+  static Color get error => gold;
+
+  static Color get primary => green;
+  static Color get secondary => isDark ? white : navy;
+  static Color get accent => gold;
+  static Color get accentStrong => gold;
+
+  static Color get border => isDark ? white.withValues(alpha: 0.1) : navy.withValues(alpha: 0.1);
+  static Color get hover => isDark ? white.withValues(alpha: 0.05) : navy.withValues(alpha: 0.05);
+  static Color get pressed => gold.withValues(alpha: 0.1);
+  static Color get disabled => isDark ? white.withValues(alpha: 0.2) : navy.withValues(alpha: 0.2);
+
+  // Compatibility aliases
+  static Color get emerald => green;
+  static Color get mist => white;
+  static Color get graphite => textMuted;
+  static Color get pine => green;
+  static Color get amber => gold;
 }
 
 ThemeData get appTheme => ThemeData(
   useMaterial3: true,
-  brightness: Brightness.dark,
+  brightness: AppColors.isDark ? Brightness.dark : Brightness.light,
   scaffoldBackgroundColor: AppColors.background,
-  colorScheme: const ColorScheme.dark(
-    primary: AppColors.gold,
-    secondary: AppColors.olive,
+  colorScheme: (AppColors.isDark ? const ColorScheme.dark() : const ColorScheme.light()).copyWith(
+    primary: AppColors.primary,
+    secondary: AppColors.secondary,
     surface: AppColors.surface,
     error: AppColors.error,
-    onPrimary: AppColors.background,
-    onSecondary: AppColors.textPrimary,
+    onPrimary: AppColors.white,
+    onSecondary: AppColors.white,
     onSurface: AppColors.textPrimary,
   ),
   appBarTheme: AppBarTheme(
@@ -109,26 +133,29 @@ ThemeData get appTheme => ThemeData(
   ),
   navigationBarTheme: NavigationBarThemeData(
     backgroundColor: AppColors.surface,
-    indicatorColor: AppColors.gold.withValues(alpha: 0.15),
+    indicatorColor: AppColors.accent.withValues(alpha: 0.15),
     labelTextStyle: WidgetStateProperty.resolveWith((states) {
       if (states.contains(WidgetState.selected)) {
         return GoogleFonts.spaceGrotesk(
           fontSize: 12,
           fontWeight: FontWeight.w600,
-          color: AppColors.gold,
+          color: AppColors.accent,
         );
       }
       return GoogleFonts.spaceGrotesk(
         fontSize: 12,
         fontWeight: FontWeight.w500,
-        color: AppColors.textSecondary,
+        color: AppColors.textSecondary.withValues(alpha: 0.7),
       );
     }),
     iconTheme: WidgetStateProperty.resolveWith((states) {
       if (states.contains(WidgetState.selected)) {
-        return const IconThemeData(color: AppColors.gold, size: 24);
+        return IconThemeData(color: AppColors.accent, size: 24);
       }
-      return const IconThemeData(color: AppColors.textSecondary, size: 24);
+      return IconThemeData(
+        color: AppColors.textSecondary.withValues(alpha: 0.7),
+        size: 24,
+      );
     }),
   ),
   textTheme: _buildTextTheme(),

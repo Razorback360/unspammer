@@ -17,6 +17,10 @@ class _CalendarPageState extends State<CalendarPage>
   late DateTime _selectedDate;
   late AnimationController _eventAnimController;
   late AnimationController _backgroundController;
+  late final Map<String, List<CalendarEvent>> _eventsByDay;
+
+  String _dateKey(DateTime date) =>
+      '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
 
   @override
   void initState() {
@@ -31,6 +35,12 @@ class _CalendarPageState extends State<CalendarPage>
       vsync: this,
       duration: const Duration(seconds: 10),
     )..repeat();
+    _eventsByDay = <String, List<CalendarEvent>>{};
+    for (final event in dummyEvents) {
+      _eventsByDay.putIfAbsent(_dateKey(event.date), () => <CalendarEvent>[]).add(
+        event,
+      );
+    }
   }
 
   @override
@@ -41,29 +51,30 @@ class _CalendarPageState extends State<CalendarPage>
   }
 
   List<CalendarEvent> _getEventsForDate(DateTime date) {
-    return dummyEvents
-        .where(
-          (event) =>
-              event.date.year == date.year &&
-              event.date.month == date.month &&
-              event.date.day == date.day,
-        )
-        .toList();
-  }
-
-  bool _hasEventsOnDate(DateTime date) {
-    return dummyEvents.any(
-      (event) =>
-          event.date.year == date.year &&
-          event.date.month == date.month &&
-          event.date.day == date.day,
+    return List<CalendarEvent>.unmodifiable(
+      _eventsByDay[_dateKey(date)] ?? const <CalendarEvent>[],
     );
   }
 
+  bool _hasEventsOnDate(DateTime date) {
+    return _eventsByDay.containsKey(_dateKey(date));
+  }
+
   void _selectDate(DateTime date) {
+    if (_selectedDate.year == date.year &&
+        _selectedDate.month == date.month &&
+        _selectedDate.day == date.day) {
+      return;
+    }
     setState(() => _selectedDate = date);
     _eventAnimController.reset();
     _eventAnimController.forward();
+  }
+
+  void _jumpToToday() {
+    final now = DateTime.now();
+    setState(() => _focusedMonth = DateTime(now.year, now.month));
+    _selectDate(now);
   }
 
   @override
@@ -71,68 +82,59 @@ class _CalendarPageState extends State<CalendarPage>
     final selectedEvents = _getEventsForDate(_selectedDate);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.surface,
       body: Stack(
         children: [
-          // Animated background
-          _AnimatedCalendarBackground(controller: _backgroundController),
-
           SafeArea(
-            child: Column(
+            child: Stack(
               children: [
-                // Header
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                ListView(
+                  physics: const BouncingScrollPhysics(),
+                  children: [
+                    // Header
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          ShaderMask(
-                            shaderCallback: (bounds) => LinearGradient(
-                              colors: [
-                                AppColors.textPrimary,
-                                AppColors.gold.withValues(alpha: 0.8),
-                              ],
-                            ).createShader(bounds),
-                            child: Text(
-                              'Calendar',
-                              style: context.textStyles.displaySmall?.copyWith(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w700,
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Schedule',
+                                style: context.textStyles.displaySmall?.copyWith(
+                                      color: AppColors.textPrimary,
+                                      fontWeight: FontWeight.w700,
+                                    ),
                               ),
-                            ),
+                              const SizedBox(height: 4),
+                              Text(
+                                '${dummyEvents.length} upcoming events - ${_focusedMonth.month == 4 ? 'April' : 'Month'} ${_focusedMonth.year}',
+                                style: context.textStyles.bodyMedium?.copyWith(color: AppColors.textSecondary),
+                              )
+                            ],
                           ),
-                          const SizedBox(height: 4),
-                          _AnimatedEventCount(count: dummyEvents.length),
+                          _AnimatedTodayButton(onTap: _jumpToToday),
                         ],
                       ),
-                      _AnimatedTodayButton(
-                        onTap: () => setState(() {
-                          _focusedMonth = DateTime.now();
-                          _selectDate(DateTime.now());
-                        }),
-                      ),
-                    ],
-                  ),
+                    ),
+                    const SizedBox(height: 24),
+
+                    // Calendar
+                    _CalendarWidget(
+                      focusedMonth: _focusedMonth,
+                      selectedDate: _selectedDate,
+                      hasEventsOnDate: _hasEventsOnDate,
+                      onDateSelected: _selectDate,
+                      onMonthChanged: (month) =>
+                          setState(() => _focusedMonth = month),
+                    ),
+
+                    // Keep room so content remains visible above the panel.
+                    const SizedBox(height: 260),
+                  ],
                 ),
-                const SizedBox(height: 24),
-
-                // Calendar
-                _CalendarWidget(
-                  focusedMonth: _focusedMonth,
-                  selectedDate: _selectedDate,
-                  hasEventsOnDate: _hasEventsOnDate,
-                  onDateSelected: _selectDate,
-                  onMonthChanged: (month) =>
-                      setState(() => _focusedMonth = month),
-                ),
-
-                const SizedBox(height: 24),
-
-                // Events for selected date
-                Expanded(
+                Positioned.fill(
                   child: _EventsPanel(
                     selectedDate: _selectedDate,
                     events: selectedEvents,
@@ -140,97 +142,6 @@ class _CalendarPageState extends State<CalendarPage>
                   ),
                 ),
               ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _AnimatedCalendarBackground extends StatelessWidget {
-  final AnimationController controller;
-  const _AnimatedCalendarBackground({required this.controller});
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: controller,
-      builder: (context, child) {
-        return CustomPaint(
-          painter: _CalendarBackgroundPainter(controller.value),
-          size: Size.infinite,
-        );
-      },
-    );
-  }
-}
-
-class _CalendarBackgroundPainter extends CustomPainter {
-  final double progress;
-  _CalendarBackgroundPainter(this.progress);
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()..style = PaintingStyle.fill;
-
-    // Large olive orb
-    final orb1Center = Offset(
-      size.width * 0.9 + math.cos(progress * 2 * math.pi) * 40,
-      size.height * 0.4 + math.sin(progress * 2 * math.pi) * 30,
-    );
-    paint.shader = RadialGradient(
-      colors: [
-        AppColors.olive.withValues(alpha: 0.1),
-        AppColors.olive.withValues(alpha: 0),
-      ],
-    ).createShader(Rect.fromCircle(center: orb1Center, radius: 200));
-    canvas.drawCircle(orb1Center, 200, paint);
-
-    // Gold accent orb
-    final orb2Center = Offset(
-      size.width * 0.1 + math.sin(progress * 2 * math.pi) * 20,
-      size.height * 0.2 + math.cos(progress * 2 * math.pi) * 25,
-    );
-    paint.shader = RadialGradient(
-      colors: [
-        AppColors.gold.withValues(alpha: 0.08),
-        AppColors.gold.withValues(alpha: 0),
-      ],
-    ).createShader(Rect.fromCircle(center: orb2Center, radius: 100));
-    canvas.drawCircle(orb2Center, 100, paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant _CalendarBackgroundPainter oldDelegate) =>
-      oldDelegate.progress != progress;
-}
-
-class _AnimatedEventCount extends StatelessWidget {
-  final int count;
-  const _AnimatedEventCount({required this.count});
-
-  @override
-  Widget build(BuildContext context) {
-    return TweenAnimationBuilder<int>(
-      tween: IntTween(begin: 0, end: count),
-      duration: const Duration(milliseconds: 800),
-      curve: Curves.easeOutCubic,
-      builder: (context, value, child) => Row(
-        children: [
-          Container(
-            width: 8,
-            height: 8,
-            decoration: BoxDecoration(
-              color: AppColors.gold,
-              shape: BoxShape.circle,
-            ),
-          ),
-          const SizedBox(width: 8),
-          Text(
-            '$value upcoming events',
-            style: context.textStyles.bodyMedium?.withColor(
-              AppColors.textSecondary,
             ),
           ),
         ],
@@ -353,25 +264,8 @@ class _CalendarWidget extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              AppColors.surface,
-              AppColors.surfaceLight.withValues(alpha: 0.3),
-            ],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
+          color: AppColors.surface,
           borderRadius: BorderRadius.circular(AppRadius.lg),
-          border: Border.all(
-            color: AppColors.surfaceLight.withValues(alpha: 0.3),
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.2),
-              blurRadius: 20,
-              offset: const Offset(0, 8),
-            ),
-          ],
         ),
         child: Column(
           children: [
@@ -662,28 +556,12 @@ class _CalendarDayState extends State<_CalendarDay>
         width: 40,
         height: 44,
         decoration: BoxDecoration(
-          gradient: widget.isSelected
-              ? LinearGradient(
-                  colors: [AppColors.gold, AppColors.goldMuted],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                )
-              : null,
           color: widget.isSelected
-              ? null
+              ? AppColors.green
               : widget.isToday
-              ? AppColors.gold.withValues(alpha: 0.15)
+              ? AppColors.green.withValues(alpha: 0.1)
               : Colors.transparent,
-          borderRadius: BorderRadius.circular(AppRadius.sm),
-          boxShadow: widget.isSelected
-              ? [
-                  BoxShadow(
-                    color: AppColors.gold.withValues(alpha: 0.4),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ]
-              : null,
+          borderRadius: BorderRadius.circular(AppRadius.full),
         ),
         child: Stack(
           alignment: Alignment.center,
@@ -692,9 +570,9 @@ class _CalendarDayState extends State<_CalendarDay>
               '${widget.dayNumber}',
               style: context.textStyles.titleMedium?.copyWith(
                 color: widget.isSelected
-                    ? AppColors.background
+                    ? AppColors.white
                     : widget.isToday
-                    ? AppColors.gold
+                    ? AppColors.green
                     : AppColors.textPrimary,
                 fontWeight: widget.isSelected || widget.isToday
                     ? FontWeight.w700
@@ -704,27 +582,13 @@ class _CalendarDayState extends State<_CalendarDay>
             if (widget.hasEvents && !widget.isSelected)
               Positioned(
                 bottom: 4,
-                child: AnimatedBuilder(
-                  animation: _controller,
-                  builder: (context, child) {
-                    return Container(
-                      width: 6,
-                      height: 6,
-                      decoration: BoxDecoration(
-                        color: AppColors.olive,
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.olive.withValues(
-                              alpha: 0.5 * _controller.value,
-                            ),
-                            blurRadius: 4,
-                            spreadRadius: 1,
-                          ),
-                        ],
-                      ),
-                    );
-                  },
+                child: Container(
+                  width: 4,
+                  height: 4,
+                  decoration: const BoxDecoration(
+                    color: AppColors.green,
+                    shape: BoxShape.circle,
+                  ),
                 ),
               ),
           ],
@@ -747,88 +611,127 @@ class _EventsPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            AppColors.surface,
-            AppColors.surfaceLight.withValues(alpha: 0.2),
-          ],
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-        ),
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.3),
-            blurRadius: 20,
-            offset: const Offset(0, -5),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Handle bar
-          Center(
-            child: Container(
-              margin: const EdgeInsets.only(top: 12),
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: AppColors.surfaceLight,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(24, 20, 24, 16),
-            child: Row(
-              children: [
-                _AnimatedDateBadge(date: selectedDate),
-                const SizedBox(width: 12),
-                Text(
-                  events.isEmpty
-                      ? 'No events'
-                      : '${events.length} event${events.length > 1 ? 's' : ''}',
-                  style: context.textStyles.bodyMedium?.withColor(
-                    AppColors.textSecondary,
-                  ),
-                ),
+    return DraggableScrollableSheet(
+      expand: true,
+      minChildSize: 0.32,
+      initialChildSize: 0.39,
+      maxChildSize: 0.9,
+      snap: true,
+      snapSizes: const [0.32, 0.39, 0.62, 0.9],
+      builder: (context, scrollController) {
+        return Container(
+          width: double.infinity,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                AppColors.surfaceLight,
+                AppColors.surfaceLight,
               ],
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+            ),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.navy.withValues(alpha: 0.05),
+                blurRadius: 16,
+                offset: const Offset(0, -5),
+              ),
+            ],
+            border: Border(
+              top: BorderSide(color: AppColors.border, width: 1.0),
             ),
           ),
-          Expanded(
-            child: events.isEmpty
-                ? _EmptyEventsView()
-                : ListView.builder(
-                    padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+          child: CustomScrollView(
+            controller: scrollController,
+            slivers: [
+              SliverToBoxAdapter(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Handle bar
+                    Center(
+                      child: Container(
+                        margin: const EdgeInsets.only(top: 12),
+                        width: 40,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: AppColors.textMuted,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(24, 20, 24, 16),
+                      child: Row(
+                        children: [
+                          _AnimatedDateBadge(date: selectedDate),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Container(
+                              height: 1,
+                              color: AppColors.border,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (events.isEmpty)
+                SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: Padding(
+                    padding: const EdgeInsets.only(bottom: 100),
+                    child: _EmptyEventsView(),
+                  ),
+                )
+              else
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(20, 0, 24, 100),
+                  sliver: SliverList.builder(
                     itemCount: events.length,
                     itemBuilder: (context, index) {
                       return AnimatedBuilder(
                         animation: animController,
                         builder: (context, child) {
                           final delay = (index * 0.2).clamp(0.0, 0.6);
-                          final progress = Curves.easeOutBack.transform(
-                            (((animController.value - delay) / (1 - delay))
-                                .clamp(0.0, 1.0)),
+                          final normalized =
+                              ((animController.value - delay) / (1 - delay));
+                          final safeNormalized = normalized.isFinite
+                              ? normalized.clamp(0.0, 1.0).toDouble()
+                              : 0.0;
+                          final motionProgress = Curves.easeOutBack.transform(
+                            safeNormalized,
                           );
+                          final safeMotion = motionProgress.isFinite
+                              ? motionProgress
+                              : 0.0;
+                          final opacityProgress =
+                              safeMotion.clamp(0.0, 1.0).toDouble();
                           return Transform.translate(
-                            offset: Offset(0, 20 * (1 - progress)),
-                            child: Opacity(opacity: progress, child: child),
+                            offset: Offset(0, 20 * (1 - safeMotion)),
+                            child: Opacity(
+                              opacity: opacityProgress,
+                              child: child,
+                            ),
                           );
                         },
-                        child: Padding(
-                          padding: const EdgeInsets.only(bottom: 16),
-                          child: EventCard(event: events[index], index: index),
+                        child: EventCard(
+                          event: events[index],
+                          index: index,
+                          isFirst: index == 0,
+                          isLast: index == events.length - 1,
                         ),
                       );
                     },
                   ),
+                ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 }
@@ -896,22 +799,11 @@ class _AnimatedDateBadgeState extends State<_AnimatedDateBadge>
         return Transform.scale(
           scale: 0.8 + 0.2 * Curves.elasticOut.transform(_controller.value),
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  AppColors.gold.withValues(alpha: 0.2),
-                  AppColors.goldMuted.withValues(alpha: 0.1),
-                ],
-              ),
-              borderRadius: BorderRadius.circular(AppRadius.full),
-              border: Border.all(color: AppColors.gold.withValues(alpha: 0.3)),
-            ),
             child: Text(
               _formatDate(widget.date),
-              style: context.textStyles.labelLarge?.copyWith(
-                color: AppColors.gold,
-                fontWeight: FontWeight.w600,
+              style: context.textStyles.titleLarge?.copyWith(
+                color: AppColors.textPrimary,
+                fontWeight: FontWeight.w700,
               ),
             ),
           ),
@@ -1011,7 +903,15 @@ class _EmptyEventsViewState extends State<_EmptyEventsView>
 class EventCard extends StatefulWidget {
   final CalendarEvent event;
   final int index;
-  const EventCard({super.key, required this.event, required this.index});
+  final bool isFirst;
+  final bool isLast;
+  const EventCard({
+    super.key,
+    required this.event,
+    required this.index,
+    this.isFirst = false,
+    this.isLast = false,
+  });
 
   @override
   State<EventCard> createState() => _EventCardState();
@@ -1048,214 +948,159 @@ class _EventCardState extends State<EventCard>
   Widget build(BuildContext context) {
     final accentColor = _accentColors[widget.index % _accentColors.length];
 
-    return GestureDetector(
-      onTapDown: (_) => setState(() => _isPressed = true),
-      onTapUp: (_) => setState(() => _isPressed = false),
-      onTapCancel: () => setState(() => _isPressed = false),
-      child: AnimatedScale(
-        scale: _isPressed ? 0.98 : 1.0,
-        duration: const Duration(milliseconds: 150),
-        child: AnimatedBuilder(
-          animation: _glowController,
-          builder: (context, child) {
-            return Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(AppRadius.lg),
-                boxShadow: [
-                  BoxShadow(
-                    color: accentColor.withValues(
-                      alpha: 0.1 + 0.1 * _glowController.value,
-                    ),
-                    blurRadius: 15,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: child,
-            );
-          },
-          child: Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  AppColors.background,
-                  AppColors.surface.withValues(alpha: 0.8),
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(AppRadius.lg),
-              border: Border.all(
-                color: AppColors.surfaceLight.withValues(alpha: 0.5),
-              ),
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Time column
+          SizedBox(
+            width: 60,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.start,
               children: [
-                // Animated time indicator
-                Container(
-                  width: 5,
-                  height: 75,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [accentColor, accentColor.withValues(alpha: 0.5)],
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                    ),
-                    borderRadius: BorderRadius.circular(3),
-                    boxShadow: [
-                      BoxShadow(
-                        color: accentColor.withValues(alpha: 0.4),
-                        blurRadius: 6,
-                        spreadRadius: 0,
-                      ),
-                    ],
+                const SizedBox(height: 18),
+                Text(
+                  _formatTimeHourMinute(widget.event.date),
+                  style: context.textStyles.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
-                const SizedBox(width: 16),
-                // Content
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 5,
-                            ),
-                            decoration: BoxDecoration(
-                              color: accentColor.withValues(alpha: 0.15),
-                              borderRadius: BorderRadius.circular(AppRadius.sm),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  Icons.access_time_rounded,
-                                  color: accentColor,
-                                  size: 14,
-                                ),
-                                const SizedBox(width: 5),
-                                Text(
-                                  _formatTime(widget.event.date),
-                                  style: context.textStyles.labelSmall
-                                      ?.copyWith(
-                                        color: accentColor,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 10),
-                      Text(
-                        widget.event.title,
-                        style: context.textStyles.headlineSmall,
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        widget.event.description,
-                        style: context.textStyles.bodyMedium?.withColor(
-                          AppColors.textSecondary,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
+                Text(
+                  _formatTimePeriod(widget.event.date),
+                  style: context.textStyles.labelSmall?.withColor(AppColors.textMuted),
                 ),
-                // Auto-generated badge
-                _AutoBadge(color: accentColor),
               ],
             ),
           ),
-        ),
+          
+          // Timeline column
+          SizedBox(
+            width: 30,
+            child: Stack(
+              alignment: Alignment.topCenter,
+              children: [
+                // Vertical Line
+                Positioned(
+                  top: widget.isFirst ? 24 : 0,
+                  bottom: widget.isLast ? null : 0,
+                  height: widget.isLast ? 24 : null,
+                  child: Container(
+                    width: 1,
+                    color: AppColors.border,
+                  ),
+                ),
+                // Colored Dot
+                Positioned(
+                  top: 22,
+                  child: Container(
+                    width: 10,
+                    height: 10,
+                    decoration: BoxDecoration(
+                      color: accentColor,
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: AppColors.surfaceLight,
+                        width: 2,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          
+          // Card column
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: 20),
+              child: GestureDetector(
+                onTapDown: (_) => setState(() => _isPressed = true),
+                onTapUp: (_) => setState(() => _isPressed = false),
+                onTapCancel: () => setState(() => _isPressed = false),
+                child: AnimatedScale(
+                  scale: _isPressed ? 0.98 : 1.0,
+                  duration: const Duration(milliseconds: 150),
+                  child: AnimatedBuilder(
+                    animation: _glowController,
+                    builder: (context, child) {
+                      return Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(AppRadius.lg),
+                          boxShadow: [
+                            BoxShadow(
+                              color: accentColor.withValues(
+                                alpha: 0.1 + 0.1 * _glowController.value,
+                              ),
+                              blurRadius: 15,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: child,
+                      );
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: AppColors.surface,
+                        borderRadius: BorderRadius.circular(AppRadius.lg),
+                        border: Border.all(color: AppColors.border),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.navy.withValues(alpha: 0.05),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  widget.event.title,
+                                  style: context.textStyles.titleLarge?.copyWith(fontWeight: FontWeight.w700),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            widget.event.description,
+                            style: context.textStyles.bodyMedium?.withColor(AppColors.textSecondary),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  String _formatTime(DateTime date) {
+  String _formatTimeHourMinute(DateTime date) {
     final hour = date.hour == 0
         ? 12
         : (date.hour > 12 ? date.hour - 12 : date.hour);
     final minute = date.minute.toString().padLeft(2, '0');
-    final period = date.hour >= 12 ? 'PM' : 'AM';
-    return '$hour:$minute $period';
+    return '$hour:$minute';
+  }
+
+  String _formatTimePeriod(DateTime date) {
+    return date.hour >= 12 ? 'PM' : 'AM';
   }
 }
 
-class _AutoBadge extends StatefulWidget {
-  final Color color;
-  const _AutoBadge({required this.color});
 
-  @override
-  State<_AutoBadge> createState() => _AutoBadgeState();
-}
 
-class _AutoBadgeState extends State<_AutoBadge>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _sparkleController;
 
-  @override
-  void initState() {
-    super.initState();
-    _sparkleController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1500),
-    )..repeat();
-  }
 
-  @override
-  void dispose() {
-    _sparkleController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _sparkleController,
-      builder: (context, child) {
-        return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                AppColors.olive.withValues(alpha: 0.2),
-                AppColors.olive.withValues(alpha: 0.1),
-              ],
-            ),
-            borderRadius: BorderRadius.circular(AppRadius.sm),
-            border: Border.all(color: AppColors.olive.withValues(alpha: 0.3)),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Transform.rotate(
-                angle: _sparkleController.value * math.pi * 2,
-                child: Icon(
-                  Icons.auto_awesome_rounded,
-                  color: AppColors.olive,
-                  size: 14,
-                ),
-              ),
-              const SizedBox(width: 4),
-              Text(
-                'Auto',
-                style: context.textStyles.labelSmall?.copyWith(
-                  color: AppColors.olive,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-}
