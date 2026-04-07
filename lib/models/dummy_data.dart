@@ -1,10 +1,13 @@
+import 'package:flutter/foundation.dart';
+
 class Email {
   final String id;
   final String sender;
   final String subject;
   final String snippet;
   final DateTime date;
-  final bool isImportant;
+  final DateTime? eventDate;
+  bool isImportant;
   final bool hasEvent;
   final EmailCategory category;
   final String? courseCode;
@@ -15,6 +18,7 @@ class Email {
     required this.subject,
     required this.snippet,
     required this.date,
+    this.eventDate,
     required this.isImportant,
     this.hasEvent = false,
     required this.category,
@@ -54,6 +58,7 @@ final List<Email> dummyEmails = [
     snippet:
         'Don\'t miss the upcoming KFUPM hackathon this weekend. Great prizes and food!',
     date: DateTime.now().subtract(const Duration(minutes: 15)),
+    eventDate: DateTime.now().add(const Duration(days: 2, hours: 10)),
     isImportant: false,
     hasEvent: true,
     category: EmailCategory.other,
@@ -86,6 +91,7 @@ final List<Email> dummyEmails = [
     snippet:
         'Early registration for the next semester begins on Tuesday. Prepare your schedule.',
     date: DateTime.now().subtract(const Duration(days: 1)),
+    eventDate: DateTime.now().add(const Duration(days: 4, hours: 8)),
     isImportant: true,
     hasEvent: true,
     category: EmailCategory.registrar,
@@ -106,6 +112,7 @@ final List<Email> dummyEmails = [
     snippet:
         'Top companies including Aramco, SABIC, and STC will be recruiting on campus.',
     date: DateTime.now().subtract(const Duration(hours: 8)),
+    eventDate: DateTime.now().add(const Duration(days: 3, hours: 9)),
     isImportant: false,
     hasEvent: true,
     category: EmailCategory.other,
@@ -116,7 +123,9 @@ final List<Email> dummyEmails = [
     subject: 'Project Meeting',
     snippet: 'Hey, let\'s meet tomorrow to discuss the final project presentation.',
     date: DateTime.now().subtract(const Duration(minutes: 5)),
+    eventDate: DateTime.now().add(const Duration(days: 1, hours: 2)),
     isImportant: true,
+    hasEvent: true,
     category: EmailCategory.direct,
   ),
   Email(
@@ -135,7 +144,9 @@ final List<Email> dummyEmails = [
     subject: 'Quiz Reminder for COE292',
     snippet: 'Don\'t forget tomorrow\'s quiz on Ch 3.',
     date: DateTime.now().subtract(const Duration(hours: 20)),
+    eventDate: DateTime.now().add(const Duration(days: 1)),
     isImportant: true,
+    hasEvent: true,
     category: EmailCategory.blackboard,
     courseCode: 'COE292',
   ),
@@ -163,25 +174,11 @@ final List<Email> dummyEmails = [
 
 final List<CalendarEvent> dummyEvents = [
   CalendarEvent(
-    id: 'c1',
-    title: 'KFUPM Hackathon',
-    description: 'Participate in the weekend hackathon. Free food & prizes!',
-    date: DateTime.now().add(const Duration(days: 2, hours: 10)),
-    sourceEmailId: 'e1',
-  ),
-  CalendarEvent(
     id: 'c2',
     title: 'Early Registration',
     description: 'Register for classes for the upcoming semester.',
     date: DateTime.now().add(const Duration(days: 4, hours: 8)),
     sourceEmailId: 'e4',
-  ),
-  CalendarEvent(
-    id: 'c3',
-    title: 'Career Fair',
-    description: 'Meet recruiters from top companies. Bring your resume!',
-    date: DateTime.now().add(const Duration(days: 3, hours: 9)),
-    sourceEmailId: 'e6',
   ),
   CalendarEvent(
     id: 'c4',
@@ -206,3 +203,6 @@ final List<CalendarEvent> dummyEvents = [
     sourceEmailId: 'e2',
   ),
 ];
+
+final ValueNotifier<int> appNavigationIndex = ValueNotifier(0);
+final ValueNotifier<DateTime?> appCalendarJumpDate = ValueNotifier(null);
