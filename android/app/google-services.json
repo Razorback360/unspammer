@@ -1,0 +1,38 @@
+{
+  "project_info": {
+    "project_number": "1036196801886",
+    "project_id": "unifocus-b2575",
+    "storage_bucket": "unifocus-b2575.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1036196801886:android:524bab2cdedae0e59b33cf",
+        "android_client_info": {
+          "package_name": "com.ffc.unspammer"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1036196801886-d156aamnuo4g3vjmsng5vmrqdbctqnh9.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.ffc.unspammer",
+            "certificate_hash": "ed49da67297efc432ae1954790293e563cb62aa7"
+          }
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAgQ21-eh0nh9GMYHzDrRyD2iQk7Lm0W7k"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
