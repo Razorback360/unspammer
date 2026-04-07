@@ -94,22 +94,29 @@ class _InboxPageState extends State<InboxPage> with TickerProviderStateMixin {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Good morning,', style: context.textStyles.bodyMedium?.copyWith(color: AppColors.textSecondary)),
+                        Text(
+                          'Good morning,',
+                          style: context.textStyles.bodyMedium?.copyWith(
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
                         Row(
                           children: [
                             Text(
                               'Student',
                               style: context.textStyles.displaySmall?.copyWith(
-                                    color: AppColors.textPrimary,
-                                    fontWeight: FontWeight.w700,
-                                  ),
+                                color: AppColors.textPrimary,
+                                fontWeight: FontWeight.w700,
+                              ),
                             ),
                             const SizedBox(width: 8),
                             const Text('👋', style: TextStyle(fontSize: 24)),
                             const Spacer(),
                             IconButton(
                               icon: Icon(
-                                AppColors.isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
+                                AppColors.isDark
+                                    ? Icons.light_mode_rounded
+                                    : Icons.dark_mode_rounded,
                                 color: AppColors.textPrimary,
                               ),
                               onPressed: () {
@@ -157,15 +164,17 @@ class _InboxPageState extends State<InboxPage> with TickerProviderStateMixin {
                         animation: _animController,
                         builder: (context, child) {
                           final delay = (index * 0.15).clamp(0.0, 0.7);
-                          final normalized = (_animController.value - delay) /
-                              (1.0 - delay);
+                          final normalized =
+                              (_animController.value - delay) / (1.0 - delay);
                           final safeProgress = normalized.isFinite
                               ? normalized.clamp(0.0, 1.0).toDouble()
                               : 0.0;
-                          final motion =
-                              Curves.easeOutCubic.transform(safeProgress);
-                          final opacityProgress =
-                              motion.clamp(0.0, 1.0).toDouble();
+                          final motion = Curves.easeOutCubic.transform(
+                            safeProgress,
+                          );
+                          final opacityProgress = motion
+                              .clamp(0.0, 1.0)
+                              .toDouble();
                           return Transform.translate(
                             offset: Offset(0, 24 * (1 - motion)),
                             child: Opacity(
@@ -183,7 +192,7 @@ class _InboxPageState extends State<InboxPage> with TickerProviderStateMixin {
                               setState(() {
                                 email.isImportant = !email.isImportant;
                               });
-                            }
+                            },
                           ),
                         ),
                       );
@@ -197,8 +206,6 @@ class _InboxPageState extends State<InboxPage> with TickerProviderStateMixin {
       ),
     );
   }
-
-
 }
 
 class _FilterChips extends StatelessWidget {
@@ -210,20 +217,24 @@ class _FilterChips extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final filters = ['All', 'Important', 'Other'];
-    final alignment = selectedIndex == 0 
-        ? Alignment.centerLeft 
-        : selectedIndex == 1 
-            ? Alignment.center 
-            : Alignment.centerRight;
+    final alignment = selectedIndex == 0
+        ? Alignment.centerLeft
+        : selectedIndex == 1
+        ? Alignment.center
+        : Alignment.centerRight;
 
     return Container(
       height: 48,
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: AppColors.isDark ? Colors.black.withValues(alpha: 0.25) : AppColors.navy.withValues(alpha: 0.05),
+        color: AppColors.isDark
+            ? Colors.black.withValues(alpha: 0.25)
+            : AppColors.navy.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(AppRadius.md),
         border: Border.all(
-          color: AppColors.isDark ? Colors.white.withValues(alpha: 0.05) : AppColors.navy.withValues(alpha: 0.1),
+          color: AppColors.isDark
+              ? Colors.white.withValues(alpha: 0.05)
+              : AppColors.navy.withValues(alpha: 0.1),
         ),
       ),
       child: Stack(
@@ -260,8 +271,12 @@ class _FilterChips extends StatelessWidget {
                     child: AnimatedDefaultTextStyle(
                       duration: const Duration(milliseconds: 200),
                       style: context.textStyles.labelLarge!.copyWith(
-                        color: isSelected ? AppColors.textPrimary : AppColors.textSecondary,
-                        fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                        color: isSelected
+                            ? AppColors.textPrimary
+                            : AppColors.textSecondary,
+                        fontWeight: isSelected
+                            ? FontWeight.w700
+                            : FontWeight.w500,
                       ),
                       child: Text(filters[index]),
                     ),
@@ -322,8 +337,8 @@ class _ImportantFilters extends StatelessWidget {
             label: 'Registrar',
             isSelected: selectedCategory == EmailCategory.registrar,
             onTap: () {
-               onCategoryChanged(EmailCategory.registrar);
-               onCourseChanged(null);
+              onCategoryChanged(EmailCategory.registrar);
+              onCourseChanged(null);
             },
           ),
           const SizedBox(width: 8),
@@ -331,8 +346,8 @@ class _ImportantFilters extends StatelessWidget {
             label: 'Direct',
             isSelected: selectedCategory == EmailCategory.direct,
             onTap: () {
-               onCategoryChanged(EmailCategory.direct);
-               onCourseChanged(null);
+              onCategoryChanged(EmailCategory.direct);
+              onCourseChanged(null);
             },
           ),
         ],
@@ -346,7 +361,11 @@ class _Chip extends StatelessWidget {
   final bool isSelected;
   final VoidCallback onTap;
 
-  const _Chip({required this.label, required this.isSelected, required this.onTap});
+  const _Chip({
+    required this.label,
+    required this.isSelected,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -355,9 +374,15 @@ class _Chip extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected ? (AppColors.isDark ? AppColors.gold.withValues(alpha: 0.2) : AppColors.gold.withValues(alpha: 0.1)) : Colors.transparent,
+          color: isSelected
+              ? (AppColors.isDark
+                    ? AppColors.gold.withValues(alpha: 0.2)
+                    : AppColors.gold.withValues(alpha: 0.1))
+              : Colors.transparent,
           border: Border.all(
-            color: isSelected ? AppColors.gold : (AppColors.isDark ? Colors.white24 : Colors.black12),
+            color: isSelected
+                ? AppColors.gold
+                : (AppColors.isDark ? Colors.white24 : Colors.black12),
           ),
           borderRadius: BorderRadius.circular(20),
         ),
@@ -439,14 +464,18 @@ class _EmailCardState extends State<EmailCard> {
                         width: 40,
                         height: 40,
                         decoration: BoxDecoration(
-                          color: email.isImportant ? AppColors.gold.withValues(alpha: 0.2) : AppColors.green.withValues(alpha: 0.1),
+                          color: email.isImportant
+                              ? AppColors.gold.withValues(alpha: 0.2)
+                              : AppColors.green.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(AppRadius.md),
                         ),
                         child: Center(
                           child: Text(
                             email.sender.substring(0, 2).toUpperCase(),
                             style: context.textStyles.titleMedium?.copyWith(
-                              color: email.isImportant ? AppColors.gold : AppColors.green,
+                              color: email.isImportant
+                                  ? AppColors.gold
+                                  : AppColors.green,
                               fontWeight: FontWeight.w700,
                             ),
                           ),
@@ -467,8 +496,10 @@ class _EmailCardState extends State<EmailCard> {
                             const SizedBox(height: 4),
                             Text(
                               email.subject,
-                              style: context.textStyles.labelMedium
-                                  ?.copyWith(color: AppColors.textPrimary, fontWeight: FontWeight.w600),
+                              style: context.textStyles.labelMedium?.copyWith(
+                                color: AppColors.textPrimary,
+                                fontWeight: FontWeight.w600,
+                              ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -480,7 +511,9 @@ class _EmailCardState extends State<EmailCard> {
                         children: [
                           Text(
                             timeAgo,
-                            style: context.textStyles.labelSmall?.withColor(AppColors.textMuted),
+                            style: context.textStyles.labelSmall?.withColor(
+                              AppColors.textMuted,
+                            ),
                           ),
                           const SizedBox(width: 12),
                           GestureDetector(
@@ -490,8 +523,12 @@ class _EmailCardState extends State<EmailCard> {
                               }
                             },
                             child: Icon(
-                              email.isImportant ? Icons.star_rounded : Icons.star_border_rounded,
-                              color: email.isImportant ? AppColors.gold : AppColors.textMuted,
+                              email.isImportant
+                                  ? Icons.star_rounded
+                                  : Icons.star_border_rounded,
+                              color: email.isImportant
+                                  ? AppColors.gold
+                                  : AppColors.textMuted,
                               size: 24,
                             ),
                           ),
@@ -510,6 +547,56 @@ class _EmailCardState extends State<EmailCard> {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
+                  if (email.hasEvent &&
+                      !email.isImportant &&
+                      !dummyEvents.any(
+                        (e) => e.sourceEmailId == email.id,
+                      )) ...[
+                    const SizedBox(height: 12),
+                    GestureDetector(
+                      onTap: () {
+                        final eventDate = email.eventDate ?? email.date;
+                        setState(() {
+                          dummyEvents.add(
+                            CalendarEvent(
+                              id: 'manual_${email.id}',
+                              title: email.subject,
+                              description: email.snippet,
+                              date: eventDate,
+                              sourceEmailId: email.id,
+                            ),
+                          );
+                        });
+                        appCalendarJumpDate.value = eventDate;
+                        appNavigationIndex.value = 1;
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: AppColors.green.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.calendar_today_rounded,
+                              color: AppColors.green,
+                              size: 16,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              'Add to calendar',
+                              style: context.textStyles.labelMedium?.copyWith(
+                                color: AppColors.green,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -530,4 +617,3 @@ class _EmailCardState extends State<EmailCard> {
 }
 
 // Nothing
-

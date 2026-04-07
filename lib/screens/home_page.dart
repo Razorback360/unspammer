@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:unspammer/models/dummy_data.dart';
 import 'package:unspammer/screens/calendar_page.dart';
 import 'package:unspammer/screens/inbox_page.dart';
 import 'package:unspammer/theme.dart';
@@ -15,9 +16,28 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   int _currentIndex = 0;
 
+  void _onNavigationIndexChanged() {
+    if (appNavigationIndex.value != _currentIndex) {
+      setState(() => _currentIndex = appNavigationIndex.value);
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    appNavigationIndex.addListener(_onNavigationIndexChanged);
+  }
+
+  @override
+  void dispose() {
+    appNavigationIndex.removeListener(_onNavigationIndexChanged);
+    super.dispose();
+  }
+
   void _onTabChanged(int index) {
     if (_currentIndex != index) {
       setState(() => _currentIndex = index);
+      appNavigationIndex.value = index;
     }
   }
 

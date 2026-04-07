@@ -17,16 +17,42 @@ class _CalendarPageState extends State<CalendarPage>
   late DateTime _selectedDate;
   late AnimationController _eventAnimController;
   late AnimationController _backgroundController;
-  late final Map<String, List<CalendarEvent>> _eventsByDay;
 
   String _dateKey(DateTime date) =>
       '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+
+   void _onJumpDateChanged() {
+    if (appCalendarJumpDate.value != null) {
+      setState(() {
+        _focusedMonth = DateTime(
+          appCalendarJumpDate.value!.year,
+          appCalendarJumpDate.value!.month,
+        );
+        _selectedDate = appCalendarJumpDate.value!;
+      });
+      _eventAnimController.reset();
+      _eventAnimController.forward();
+      appCalendarJumpDate.value = null;
+    }
+  }
 
   @override
   void initState() {
     super.initState();
     _focusedMonth = DateTime.now();
     _selectedDate = DateTime.now();
+
+    if (appCalendarJumpDate.value != null) {
+      _focusedMonth = DateTime(
+        appCalendarJumpDate.value!.year,
+        appCalendarJumpDate.value!.month,
+      );
+      _selectedDate = appCalendarJumpDate.value!;
+      appCalendarJumpDate.value = null;
+    }
+
+    appCalendarJumpDate.addListener(_onJumpDateChanged);
+
     _eventAnimController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 500),
@@ -35,29 +61,40 @@ class _CalendarPageState extends State<CalendarPage>
       vsync: this,
       duration: const Duration(seconds: 10),
     )..repeat();
-    _eventsByDay = <String, List<CalendarEvent>>{};
-    for (final event in dummyEvents) {
-      _eventsByDay.putIfAbsent(_dateKey(event.date), () => <CalendarEvent>[]).add(
-        event,
-      );
-    }
   }
 
   @override
   void dispose() {
+    appCalendarJumpDate.removeListener(_onJumpDateChanged);
     _eventAnimController.dispose();
     _backgroundController.dispose();
     super.dispose();
   }
 
-  List<CalendarEvent> _getEventsForDate(DateTime date) {
-    return List<CalendarEvent>.unmodifiable(
-      _eventsByDay[_dateKey(date)] ?? const <CalendarEvent>[],
-    );
-  }
+  Map<String, List<CalendarEvent>> _computeEvents() {
+    final map = <String, List<CalendarEvent>>{};
 
-  bool _hasEventsOnDate(DateTime date) {
-    return _eventsByDay.containsKey(_dateKey(date));
+    for (final event in dummyEvents) {
+      map.putIfAbsent(_dateKey(event.date), () => []).add(event);
+    }
+
+    for (final email in dummyEmails.where((e) => e.isImportant && e.hasEvent)) {
+      if (!dummyEvents.any((e) => e.sourceEmailId == email.id)) {
+        final eventDate = email.eventDate ?? email.date;
+        map
+            .putIfAbsent(_dateKey(eventDate), () => [])
+            .add(
+              CalendarEvent(
+                id: 'auto_${email.id}',
+                title: email.subject,
+                description: email.snippet,
+                date: eventDate,
+                sourceEmailId: email.id,
+              ),
+            );
+      }
+    }
+    return map;
   }
 
   void _selectDate(DateTime date) {
@@ -77,9 +114,56 @@ class _CalendarPageState extends State<CalendarPage>
     _selectDate(now);
   }
 
+  void _showAddEventDialog() {
+    final titleController = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppColors.surface,
+        title: Text('Add Event', style: context.textStyles.titleLarge),
+        content: TextField(
+          controller: titleController,
+          decoration: const InputDecoration(hintText: 'Event Title'),
+          style: context.textStyles.bodyMedium,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              'Cancel',
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
+          ),
+          TextButton(
+            onPressed: () {
+              if (titleController.text.isNotEmpty) {
+                setState(() {
+                  dummyEvents.add(
+                    CalendarEvent(
+                      id: DateTime.now().millisecondsSinceEpoch.toString(),
+                      title: titleController.text,
+                      description: 'Custom scheduled event',
+                      date: _selectedDate,
+                      sourceEmailId: '',
+                    ),
+                  );
+                });
+              }
+              Navigator.pop(context);
+            },
+            child: Text('Add', style: TextStyle(color: AppColors.gold)),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final selectedEvents = _getEventsForDate(_selectedDate);
+    final eventsMap = _computeEvents();
+    bool hasEventsOnDate(DateTime date) =>
+        eventsMap.containsKey(_dateKey(date));
+    final selectedEvents = eventsMap[_dateKey(_selectedDate)] ?? [];
 
     return Scaffold(
       backgroundColor: AppColors.surface,
@@ -104,7 +188,8 @@ class _CalendarPageState extends State<CalendarPage>
                               children: [
                                 Text(
                                   'Schedule',
-                                  style: context.textStyles.displaySmall?.copyWith(
+                                  style: context.textStyles.displaySmall
+                                      ?.copyWith(
                                         color: AppColors.textPrimary,
                                         fontWeight: FontWeight.w700,
                                       ),
@@ -112,8 +197,11 @@ class _CalendarPageState extends State<CalendarPage>
                                 const SizedBox(height: 4),
                                 Text(
                                   '${dummyEvents.length} upcoming events - ${_focusedMonth.month == 4 ? 'April' : 'Month'} ${_focusedMonth.year}',
-                                  style: context.textStyles.bodyMedium?.copyWith(color: AppColors.textSecondary),
-                                )
+                                  style: context.textStyles.bodyMedium
+                                      ?.copyWith(
+                                        color: AppColors.textSecondary,
+                                      ),
+                                ),
                               ],
                             ),
                           ),
@@ -122,7 +210,9 @@ class _CalendarPageState extends State<CalendarPage>
                             children: [
                               IconButton(
                                 icon: Icon(
-                                  AppColors.isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
+                                  AppColors.isDark
+                                      ? Icons.light_mode_rounded
+                                      : Icons.dark_mode_rounded,
                                   color: AppColors.textPrimary,
                                 ),
                                 onPressed: () {
@@ -142,7 +232,7 @@ class _CalendarPageState extends State<CalendarPage>
                     _CalendarWidget(
                       focusedMonth: _focusedMonth,
                       selectedDate: _selectedDate,
-                      hasEventsOnDate: _hasEventsOnDate,
+                      hasEventsOnDate: hasEventsOnDate,
                       onDateSelected: _selectDate,
                       onMonthChanged: (month) =>
                           setState(() => _focusedMonth = month),
@@ -157,6 +247,11 @@ class _CalendarPageState extends State<CalendarPage>
                     selectedDate: _selectedDate,
                     events: selectedEvents,
                     animController: _eventAnimController,
+                    onDeleteEvent: (event) {
+                      setState(() {
+                        dummyEvents.removeWhere((e) => e.id == event.id);
+                      });
+                    },
                   ),
                 ),
               ],
@@ -620,11 +715,13 @@ class _EventsPanel extends StatelessWidget {
   final DateTime selectedDate;
   final List<CalendarEvent> events;
   final AnimationController animController;
+  final ValueChanged<CalendarEvent> onDeleteEvent;
 
   const _EventsPanel({
     required this.selectedDate,
     required this.events,
     required this.animController,
+    required this.onDeleteEvent,
   });
 
   @override
@@ -641,10 +738,7 @@ class _EventsPanel extends StatelessWidget {
           width: double.infinity,
           decoration: BoxDecoration(
             gradient: LinearGradient(
-              colors: [
-                AppColors.surfaceLight,
-                AppColors.surfaceLight,
-              ],
+              colors: [AppColors.surfaceLight, AppColors.surfaceLight],
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
             ),
@@ -726,8 +820,9 @@ class _EventsPanel extends StatelessWidget {
                           final safeMotion = motionProgress.isFinite
                               ? motionProgress
                               : 0.0;
-                          final opacityProgress =
-                              safeMotion.clamp(0.0, 1.0).toDouble();
+                          final opacityProgress = safeMotion
+                              .clamp(0.0, 1.0)
+                              .toDouble();
                           return Transform.translate(
                             offset: Offset(0, 20 * (1 - safeMotion)),
                             child: Opacity(
@@ -741,6 +836,7 @@ class _EventsPanel extends StatelessWidget {
                           index: index,
                           isFirst: index == 0,
                           isLast: index == events.length - 1,
+                          onDelete: () => onDeleteEvent(events[index]),
                         ),
                       );
                     },
@@ -923,12 +1019,14 @@ class EventCard extends StatefulWidget {
   final int index;
   final bool isFirst;
   final bool isLast;
+  final VoidCallback? onDelete;
   const EventCard({
     super.key,
     required this.event,
     required this.index,
     this.isFirst = false,
     this.isLast = false,
+    this.onDelete,
   });
 
   @override
@@ -985,12 +1083,14 @@ class _EventCardState extends State<EventCard>
                 ),
                 Text(
                   _formatTimePeriod(widget.event.date),
-                  style: context.textStyles.labelSmall?.withColor(AppColors.textMuted),
+                  style: context.textStyles.labelSmall?.withColor(
+                    AppColors.textMuted,
+                  ),
                 ),
               ],
             ),
           ),
-          
+
           // Timeline column
           SizedBox(
             width: 30,
@@ -1002,10 +1102,7 @@ class _EventCardState extends State<EventCard>
                   top: widget.isFirst ? 24 : 0,
                   bottom: widget.isLast ? null : 0,
                   height: widget.isLast ? 24 : null,
-                  child: Container(
-                    width: 1,
-                    color: AppColors.border,
-                  ),
+                  child: Container(width: 1, color: AppColors.border),
                 ),
                 // Colored Dot
                 Positioned(
@@ -1026,7 +1123,7 @@ class _EventCardState extends State<EventCard>
               ],
             ),
           ),
-          
+
           // Card column
           Expanded(
             child: Padding(
@@ -1080,15 +1177,28 @@ class _EventCardState extends State<EventCard>
                               Expanded(
                                 child: Text(
                                   widget.event.title,
-                                  style: context.textStyles.titleLarge?.copyWith(fontWeight: FontWeight.w700),
+                                  style: context.textStyles.titleLarge
+                                      ?.copyWith(fontWeight: FontWeight.w700),
                                 ),
                               ),
+                              if (widget.onDelete != null &&
+                                  !widget.event.id.startsWith('auto_'))
+                                IconButton(
+                                  icon: const Icon(
+                                    Icons.delete_outline,
+                                    size: 20,
+                                  ),
+                                  color: AppColors.textMuted,
+                                  onPressed: widget.onDelete,
+                                ),
                             ],
                           ),
                           const SizedBox(height: 6),
                           Text(
                             widget.event.description,
-                            style: context.textStyles.bodyMedium?.withColor(AppColors.textSecondary),
+                            style: context.textStyles.bodyMedium?.withColor(
+                              AppColors.textSecondary,
+                            ),
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -1117,10 +1227,3 @@ class _EventCardState extends State<EventCard>
     return date.hour >= 12 ? 'PM' : 'AM';
   }
 }
-
-
-
-
-
-
-
