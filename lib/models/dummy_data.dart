@@ -6,6 +6,8 @@ class Email {
   final DateTime date;
   final bool isImportant;
   final bool hasEvent;
+  final EmailCategory category;
+  final String? courseCode;
 
   Email({
     required this.id,
@@ -15,7 +17,16 @@ class Email {
     required this.date,
     required this.isImportant,
     this.hasEvent = false,
+    required this.category,
+    this.courseCode,
   });
+}
+
+enum EmailCategory {
+  blackboard,
+  registrar,
+  direct,
+  other
 }
 
 class CalendarEvent {
@@ -43,8 +54,9 @@ final List<Email> dummyEmails = [
     snippet:
         'Don\'t miss the upcoming KFUPM hackathon this weekend. Great prizes and food!',
     date: DateTime.now().subtract(const Duration(minutes: 15)),
-    isImportant: true,
+    isImportant: false,
     hasEvent: true,
+    category: EmailCategory.other,
   ),
   Email(
     id: 'e2',
@@ -54,6 +66,8 @@ final List<Email> dummyEmails = [
         'Your recent assignment has been graded. Click to view your feedback.',
     date: DateTime.now().subtract(const Duration(hours: 2)),
     isImportant: true,
+    category: EmailCategory.blackboard,
+    courseCode: 'SWE316',
   ),
   Email(
     id: 'e3',
@@ -63,6 +77,7 @@ final List<Email> dummyEmails = [
         'Check out the new meals available at the student mall food court this week.',
     date: DateTime.now().subtract(const Duration(hours: 5)),
     isImportant: false,
+    category: EmailCategory.other,
   ),
   Email(
     id: 'e4',
@@ -73,6 +88,7 @@ final List<Email> dummyEmails = [
     date: DateTime.now().subtract(const Duration(days: 1)),
     isImportant: true,
     hasEvent: true,
+    category: EmailCategory.registrar,
   ),
   Email(
     id: 'e5',
@@ -81,6 +97,7 @@ final List<Email> dummyEmails = [
     snippet: 'A round-up of the latest technology news around the campus.',
     date: DateTime.now().subtract(const Duration(days: 2)),
     isImportant: false,
+    category: EmailCategory.other,
   ),
   Email(
     id: 'e6',
@@ -89,8 +106,58 @@ final List<Email> dummyEmails = [
     snippet:
         'Top companies including Aramco, SABIC, and STC will be recruiting on campus.',
     date: DateTime.now().subtract(const Duration(hours: 8)),
-    isImportant: true,
+    isImportant: false,
     hasEvent: true,
+    category: EmailCategory.other,
+  ),
+  Email(
+    id: 'e7',
+    sender: 'Ahmed Taha',
+    subject: 'Project Meeting',
+    snippet: 'Hey, let\'s meet tomorrow to discuss the final project presentation.',
+    date: DateTime.now().subtract(const Duration(minutes: 5)),
+    isImportant: true,
+    category: EmailCategory.direct,
+  ),
+  Email(
+    id: 'e8',
+    sender: 'Blackboard Learn',
+    subject: 'New Announcement: ICS324',
+    snippet: 'Midterm grades are now published.',
+    date: DateTime.now().subtract(const Duration(hours: 4)),
+    isImportant: true,
+    category: EmailCategory.blackboard,
+    courseCode: 'ICS324',
+  ),
+  Email(
+    id: 'e9',
+    sender: 'Blackboard Learn',
+    subject: 'Quiz Reminder for COE292',
+    snippet: 'Don\'t forget tomorrow\'s quiz on Ch 3.',
+    date: DateTime.now().subtract(const Duration(hours: 20)),
+    isImportant: true,
+    category: EmailCategory.blackboard,
+    courseCode: 'COE292',
+  ),
+  Email(
+    id: 'e10',
+    sender: 'Blackboard Learn',
+    subject: 'Assignment Graded: IAS212',
+    snippet: 'You have a new grade posted.',
+    date: DateTime.now().subtract(const Duration(days: 3)),
+    isImportant: true,
+    category: EmailCategory.blackboard,
+    courseCode: 'IAS212',
+  ),
+  Email(
+    id: 'e11',
+    sender: 'Blackboard Learn',
+    subject: 'Reading Materials for ISE201',
+    snippet: 'I have attached chapter 4 slides.',
+    date: DateTime.now().subtract(const Duration(days: 4)),
+    isImportant: true,
+    category: EmailCategory.blackboard,
+    courseCode: 'ISE201',
   ),
 ];
 

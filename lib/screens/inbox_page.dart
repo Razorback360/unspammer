@@ -1,6 +1,3 @@
-import 'dart:async';
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 import 'package:unspammer/models/dummy_data.dart';
 import 'package:unspammer/theme.dart';
@@ -14,14 +11,37 @@ class InboxPage extends StatefulWidget {
 
 class _InboxPageState extends State<InboxPage> with TickerProviderStateMixin {
   int _selectedFilter = 0;
+  EmailCategory? _categoryFilter;
+  String? _courseFilter;
   late AnimationController _animController;
   late AnimationController _shimmerController;
 
+  List<String> get _availableCourses {
+    return dummyEmails
+        .where((e) => e.isImportant && e.courseCode != null)
+        .map((e) => e.courseCode!)
+        .toSet()
+        .toList();
+  }
+
   List<Email> get _filteredEmails {
     if (_selectedFilter == 0) return dummyEmails;
-    if (_selectedFilter == 1)
-      return dummyEmails.where((e) => e.isImportant).toList();
-    return dummyEmails.where((e) => !e.isImportant).toList();
+    if (_selectedFilter == 2) {
+      return dummyEmails.where((e) => !e.isImportant).toList();
+    }
+
+    // Important tab (_selectedFilter == 1)
+    var filtered = dummyEmails.where((e) => e.isImportant).toList();
+
+    if (_categoryFilter != null) {
+      filtered = filtered.where((e) => e.category == _categoryFilter).toList();
+    }
+
+    if (_courseFilter != null) {
+      filtered = filtered.where((e) => e.courseCode == _courseFilter).toList();
+    }
+
+    return filtered;
   }
 
   @override
@@ -46,7 +66,11 @@ class _InboxPageState extends State<InboxPage> with TickerProviderStateMixin {
 
   void _changeFilter(int index) {
     if (_selectedFilter != index) {
-      setState(() => _selectedFilter = index);
+      setState(() {
+        _selectedFilter = index;
+        _categoryFilter = null;
+        _courseFilter = null;
+      });
       _animController.reset();
       _animController.forward();
     }
@@ -99,6 +123,25 @@ class _InboxPageState extends State<InboxPage> with TickerProviderStateMixin {
                           selectedIndex: _selectedFilter,
                           onSelected: _changeFilter,
                         ),
+                        if (_selectedFilter == 1) ...[
+                          const SizedBox(height: 16),
+                          _ImportantFilters(
+                            selectedCategory: _categoryFilter,
+                            selectedCourse: _courseFilter,
+                            availableCourses: _availableCourses,
+                            onCategoryChanged: (category) {
+                              setState(() {
+                                _categoryFilter = category;
+                                _courseFilter = null;
+                              });
+                            },
+                            onCourseChanged: (course) {
+                              setState(() {
+                                _courseFilter = course;
+                              });
+                            },
+                          ),
+                        ],
                       ],
                     ),
                   ),
@@ -223,6 +266,103 @@ class _FilterChips extends StatelessWidget {
             }),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _ImportantFilters extends StatelessWidget {
+  final EmailCategory? selectedCategory;
+  final String? selectedCourse;
+  final List<String> availableCourses;
+  final ValueChanged<EmailCategory?> onCategoryChanged;
+  final ValueChanged<String?> onCourseChanged;
+
+  const _ImportantFilters({
+    required this.selectedCategory,
+    required this.selectedCourse,
+    required this.availableCourses,
+    required this.onCategoryChanged,
+    required this.onCourseChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          _Chip(
+            label: 'All',
+            isSelected: selectedCategory == null && selectedCourse == null,
+            onTap: () {
+              onCategoryChanged(null);
+              onCourseChanged(null);
+            },
+          ),
+          for (final course in availableCourses)
+            Padding(
+              padding: const EdgeInsets.only(left: 8),
+              child: _Chip(
+                label: course,
+                isSelected: selectedCourse == course,
+                onTap: () {
+                  onCategoryChanged(EmailCategory.blackboard);
+                  onCourseChanged(course);
+                },
+              ),
+            ),
+          const SizedBox(width: 8),
+          _Chip(
+            label: 'Registrar',
+            isSelected: selectedCategory == EmailCategory.registrar,
+            onTap: () {
+               onCategoryChanged(EmailCategory.registrar);
+               onCourseChanged(null);
+            },
+          ),
+          const SizedBox(width: 8),
+          _Chip(
+            label: 'Direct',
+            isSelected: selectedCategory == EmailCategory.direct,
+            onTap: () {
+               onCategoryChanged(EmailCategory.direct);
+               onCourseChanged(null);
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _Chip extends StatelessWidget {
+  final String label;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _Chip({required this.label, required this.isSelected, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? (AppColors.isDark ? AppColors.gold.withValues(alpha: 0.2) : AppColors.gold.withValues(alpha: 0.1)) : Colors.transparent,
+          border: Border.all(
+            color: isSelected ? AppColors.gold : (AppColors.isDark ? Colors.white24 : Colors.black12),
+          ),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Text(
+          label,
+          style: context.textStyles.labelMedium?.copyWith(
+            color: isSelected ? AppColors.gold : AppColors.textSecondary,
+            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+          ),
+        ),
       ),
     );
   }
