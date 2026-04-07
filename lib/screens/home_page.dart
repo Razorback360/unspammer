@@ -31,8 +31,8 @@ class _HomePageState extends State<HomePage> {
           body: IndexedStack(
             index: _currentIndex,
             children: [
-              TickerMode(enabled: _currentIndex == 0, child: const InboxPage()),
-              TickerMode(enabled: _currentIndex == 1, child: const CalendarPage()),
+              TickerMode(enabled: _currentIndex == 0, child: InboxPage()),
+              TickerMode(enabled: _currentIndex == 1, child: CalendarPage()),
             ],
           ),
           floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
@@ -59,9 +59,10 @@ class _GlassNavBar extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(100),
+        border: AppColors.isDark ? Border.all(color: AppColors.border, width: 1.5) : null,
         boxShadow: [
           BoxShadow(
-            color: AppColors.navy.withValues(alpha: 0.1),
+            color: AppColors.isDark ? Colors.black.withValues(alpha: 0.3) : AppColors.navy.withValues(alpha: 0.1),
             blurRadius: 16,
             offset: const Offset(0, 4),
           ),
