@@ -96,25 +96,43 @@ class _CalendarPageState extends State<CalendarPage>
                       padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Schedule',
+                                  style: context.textStyles.displaySmall?.copyWith(
+                                        color: AppColors.textPrimary,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  '${dummyEvents.length} upcoming events - ${_focusedMonth.month == 4 ? 'April' : 'Month'} ${_focusedMonth.year}',
+                                  style: context.textStyles.bodyMedium?.copyWith(color: AppColors.textSecondary),
+                                )
+                              ],
+                            ),
+                          ),
                           Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                            crossAxisAlignment: CrossAxisAlignment.end,
                             children: [
-                              Text(
-                                'Schedule',
-                                style: context.textStyles.displaySmall?.copyWith(
-                                      color: AppColors.textPrimary,
-                                      fontWeight: FontWeight.w700,
-                                    ),
+                              IconButton(
+                                icon: Icon(
+                                  AppColors.isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
+                                  color: AppColors.textPrimary,
+                                ),
+                                onPressed: () {
+                                  AppColors.toggleTheme();
+                                },
                               ),
-                              const SizedBox(height: 4),
-                              Text(
-                                '${dummyEvents.length} upcoming events - ${_focusedMonth.month == 4 ? 'April' : 'Month'} ${_focusedMonth.year}',
-                                style: context.textStyles.bodyMedium?.copyWith(color: AppColors.textSecondary),
-                              )
+                              const SizedBox(height: 8),
+                              _AnimatedTodayButton(onTap: _jumpToToday),
                             ],
                           ),
-                          _AnimatedTodayButton(onTap: _jumpToToday),
                         ],
                       ),
                     ),
@@ -1099,6 +1117,8 @@ class _EventCardState extends State<EventCard>
     return date.hour >= 12 ? 'PM' : 'AM';
   }
 }
+
+
 
 
 

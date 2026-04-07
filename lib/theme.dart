@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class AppSpacing {
@@ -56,8 +57,16 @@ class AppColors {
   static const Color white = Color(0xFFFFFFFF);
 
   // Theme state
-  static final ValueNotifier<ThemeMode> themeModeNotifier = ValueNotifier(ThemeMode.light);
-  static bool get isDark => themeModeNotifier.value == ThemeMode.dark;
+  static final ValueNotifier<ThemeMode> themeModeNotifier = ValueNotifier(ThemeMode.system);
+  
+  static bool get isDark {
+    final mode = themeModeNotifier.value;
+    if (mode == ThemeMode.system) {
+      return SchedulerBinding.instance.platformDispatcher.platformBrightness == Brightness.dark;
+    }
+    return mode == ThemeMode.dark;
+  }
+  
   static void toggleTheme() {
     themeModeNotifier.value = isDark ? ThemeMode.light : ThemeMode.dark;
   }
