@@ -1,6 +1,7 @@
 import 'package:go_router/go_router.dart';
 
 import 'screens/home_page.dart';
+import 'screens/login_page.dart';
 
 /// GoRouter configuration for app navigation
 ///
@@ -17,8 +18,14 @@ import 'screens/home_page.dart';
 /// 4. Use context.pop() to go back.
 class AppRouter {
   static final GoRouter router = GoRouter(
-    initialLocation: AppRoutes.home,
+    initialLocation: AppRoutes.login,
     routes: [
+      GoRoute(
+        path: AppRoutes.login,
+        name: 'login',
+        pageBuilder: (context, state) =>
+            const NoTransitionPage(child: LoginPage()),
+      ),
       GoRoute(
         path: AppRoutes.home,
         name: 'home',
@@ -32,5 +39,6 @@ class AppRouter {
 /// Route path constants
 /// Use these instead of hard-coding route strings
 class AppRoutes {
+  static const String login = '/login';
   static const String home = '/';
 }
