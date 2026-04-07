@@ -179,6 +179,11 @@ class _InboxPageState extends State<InboxPage> with TickerProviderStateMixin {
                           child: EmailCard(
                             email: email,
                             shimmerController: _shimmerController,
+                            onToggleImportant: () {
+                              setState(() {
+                                email.isImportant = !email.isImportant;
+                              });
+                            }
                           ),
                         ),
                       );
@@ -371,10 +376,12 @@ class _Chip extends StatelessWidget {
 class EmailCard extends StatefulWidget {
   final Email email;
   final AnimationController shimmerController;
+  final VoidCallback? onToggleImportant;
   const EmailCard({
     super.key,
     required this.email,
     required this.shimmerController,
+    this.onToggleImportant,
   });
 
   @override
@@ -469,9 +476,26 @@ class _EmailCardState extends State<EmailCard> {
                         ),
                       ),
                       const SizedBox(width: 8),
-                      Text(
-                        timeAgo,
-                        style: context.textStyles.labelSmall?.withColor(AppColors.textMuted),
+                      Row(
+                        children: [
+                          Text(
+                            timeAgo,
+                            style: context.textStyles.labelSmall?.withColor(AppColors.textMuted),
+                          ),
+                          const SizedBox(width: 12),
+                          GestureDetector(
+                            onTap: () {
+                              if (widget.onToggleImportant != null) {
+                                widget.onToggleImportant!();
+                              }
+                            },
+                            child: Icon(
+                              email.isImportant ? Icons.star_rounded : Icons.star_border_rounded,
+                              color: email.isImportant ? AppColors.gold : AppColors.textMuted,
+                              size: 24,
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),

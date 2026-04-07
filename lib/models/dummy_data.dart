@@ -4,7 +4,7 @@ class Email {
   final String subject;
   final String snippet;
   final DateTime date;
-  final bool isImportant;
+  bool isImportant;
   final bool hasEvent;
   final EmailCategory category;
   final String? courseCode;
