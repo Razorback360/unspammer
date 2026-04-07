@@ -3,6 +3,7 @@ import 'package:get_it/get_it.dart';
 import '../services/auth_service.dart';
 import '../services/database_service.dart';
 import '../services/firebase_service.dart';
+import '../services/key_service.dart';
 
 final GetIt getIt = GetIt.instance;
 
@@ -11,6 +12,10 @@ Future<void> setupDependencies() async {
     final databaseService = DatabaseService();
     await databaseService.init();
     getIt.registerSingleton<DatabaseService>(databaseService);
+  }
+
+  if (!getIt.isRegistered<KeyService>()) {
+    getIt.registerSingleton<KeyService>(KeyService());
   }
 
   if (!getIt.isRegistered<AuthService>()) {
@@ -23,4 +28,3 @@ Future<void> setupDependencies() async {
     );
   }
 }
-
