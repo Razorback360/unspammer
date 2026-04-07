@@ -30,6 +30,8 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        // Required by flutter_appauth — must match the scheme in your redirect URI
+        manifestPlaceholders["appAuthRedirectScheme"] = "unspammer"
     }
 
     buildTypes {
