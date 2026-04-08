@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:unspammer/models/dummy_data.dart';
+import 'package:unspammer/models/email_model.dart';
 import 'package:unspammer/theme.dart';
 
 class InboxPage extends StatefulWidget {
@@ -24,7 +25,7 @@ class _InboxPageState extends State<InboxPage> with TickerProviderStateMixin {
         .toList();
   }
 
-  List<Email> get _filteredEmails {
+  List<EmailModel> get _filteredEmails {
     if (_selectedFilter == 0) return dummyEmails;
     if (_selectedFilter == 2) {
       return dummyEmails.where((e) => !e.isImportant).toList();
@@ -190,7 +191,12 @@ class _InboxPageState extends State<InboxPage> with TickerProviderStateMixin {
                             shimmerController: _shimmerController,
                             onToggleImportant: () {
                               setState(() {
-                                email.isImportant = !email.isImportant;
+                                final isNowImportant = !email.isImportant;
+                                final newClassification = isNowImportant ? 'important' : 'not_important';
+                                final index = dummyEmails.indexWhere((e) => e.id == email.id);
+                                if (index != -1) {
+                                  dummyEmails[index] = email.copyWith(classification: newClassification);
+                                }
                               });
                             },
                           ),
@@ -399,7 +405,7 @@ class _Chip extends StatelessWidget {
 }
 
 class EmailCard extends StatefulWidget {
-  final Email email;
+  final EmailModel email;
   final AnimationController shimmerController;
   final VoidCallback? onToggleImportant;
   const EmailCard({
@@ -419,7 +425,7 @@ class _EmailCardState extends State<EmailCard> {
   @override
   Widget build(BuildContext context) {
     final email = widget.email;
-    final timeAgo = _getTimeAgo(email.date);
+    final timeAgo = _getTimeAgo(email.timestamp);
 
     return GestureDetector(
       onTapDown: (_) => setState(() => _isPressed = true),
@@ -471,7 +477,7 @@ class _EmailCardState extends State<EmailCard> {
                         ),
                         child: Center(
                           child: Text(
-                            email.sender.substring(0, 2).toUpperCase(),
+                            email.fromAddress.substring(0, 2).toUpperCase(),
                             style: context.textStyles.titleMedium?.copyWith(
                               color: email.isImportant
                                   ? AppColors.gold
@@ -488,7 +494,7 @@ class _EmailCardState extends State<EmailCard> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              email.sender,
+                              email.fromAddress,
                               style: context.textStyles.titleMedium,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -539,7 +545,7 @@ class _EmailCardState extends State<EmailCard> {
                   const SizedBox(height: 12),
                   // Snippet
                   Text(
-                    email.snippet,
+                    email.summary,
                     style: context.textStyles.bodyMedium?.copyWith(
                       color: AppColors.textSecondary,
                       fontSize: 13,
@@ -589,7 +595,7 @@ class _EmailCardState extends State<EmailCard> {
                             CalendarEvent(
                               id: 'manual_${email.id}',
                               title: email.subject,
-                              description: email.snippet,
+                              description: email.summary,
                               date: eventDate!,
                               sourceEmailId: email.id,
                             ),

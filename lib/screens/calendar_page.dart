@@ -80,14 +80,14 @@ class _CalendarPageState extends State<CalendarPage>
 
     for (final email in dummyEmails.where((e) => e.isImportant && e.hasEvent)) {
       if (!dummyEvents.any((e) => e.sourceEmailId == email.id)) {
-        final eventDate = email.eventDate ?? email.date;
+        final eventDate = email.eventDate ?? email.timestamp;
         map
             .putIfAbsent(_dateKey(eventDate), () => [])
             .add(
               CalendarEvent(
                 id: 'auto_${email.id}',
                 title: email.subject,
-                description: email.snippet,
+                description: email.summary,
                 date: eventDate,
                 sourceEmailId: email.id,
               ),
