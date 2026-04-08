@@ -1,37 +1,5 @@
 import 'package:flutter/foundation.dart';
-
-class Email {
-  final String id;
-  final String sender;
-  final String subject;
-  final String snippet;
-  final DateTime date;
-  final DateTime? eventDate;
-  bool isImportant;
-  final bool hasEvent;
-  final EmailCategory category;
-  final String? courseCode;
-
-  Email({
-    required this.id,
-    required this.sender,
-    required this.subject,
-    required this.snippet,
-    required this.date,
-    this.eventDate,
-    required this.isImportant,
-    this.hasEvent = false,
-    required this.category,
-    this.courseCode,
-  });
-}
-
-enum EmailCategory {
-  blackboard,
-  registrar,
-  direct,
-  other
-}
+import 'package:unspammer/models/email_model.dart';
 
 class CalendarEvent {
   final String id;
@@ -50,98 +18,106 @@ class CalendarEvent {
 }
 
 // Dummy Data
-final List<Email> dummyEmails = [
+final List<EmailModel> dummyEmails = [
   // 1. Important, Dated
-  Email(
+  EmailModel(
     id: 'e1',
-    sender: 'Ahmed Taha',
+    fromAddress: 'Ahmed Taha',
     subject: 'Project Meeting',
-    snippet: 'Hey, let\'s meet tomorrow to discuss the final project presentation.',
-    date: DateTime.now().subtract(const Duration(minutes: 5)),
+    summary: 'Hey, let\'s meet tomorrow to discuss the final project presentation.',
+    body: 'Hey, let\'s meet tomorrow to discuss the final project presentation.',
+    timestamp: DateTime.now().subtract(const Duration(minutes: 5)),
     eventDate: DateTime.now().add(const Duration(days: 1, hours: 2)),
-    isImportant: true,
+    classification: 'important',
     hasEvent: true,
     category: EmailCategory.direct,
   ),
   // 2. Important, Dated
-  Email(
+  EmailModel(
     id: 'e2',
-    sender: 'Blackboard Learn',
+    fromAddress: 'Blackboard Learn',
     subject: 'Quiz Reminder for COE292',
-    snippet: 'Don\'t forget tomorrow\'s quiz on Ch 3.',
-    date: DateTime.now().subtract(const Duration(hours: 20)),
+    summary: 'Don\'t forget tomorrow\'s quiz on Ch 3.',
+    body: 'Don\'t forget tomorrow\'s quiz on Ch 3.',
+    timestamp: DateTime.now().subtract(const Duration(hours: 20)),
     eventDate: DateTime.now().add(const Duration(days: 1)),
-    isImportant: true,
+    classification: 'important',
     hasEvent: true,
     category: EmailCategory.blackboard,
     courseCode: 'COE292',
   ),
   // 3. Important, Undated
-  Email(
+  EmailModel(
     id: 'e3',
-    sender: 'Registrar Office',
+    fromAddress: 'Registrar Office',
     subject: 'Course Registration Result',
-    snippet: 'Your courses for the upcoming semester have been confirmed.',
-    date: DateTime.now().subtract(const Duration(days: 1)),
-    isImportant: true,
+    summary: 'Your courses for the upcoming semester have been confirmed.',
+    body: 'Your courses for the upcoming semester have been confirmed.',
+    timestamp: DateTime.now().subtract(const Duration(days: 1)),
+    classification: 'important',
     hasEvent: false,
     category: EmailCategory.registrar,
   ),
   // 4. Important, Undated
-  Email(
+  EmailModel(
     id: 'e4',
-    sender: 'Blackboard Learn',
+    fromAddress: 'Blackboard Learn',
     subject: 'Assignment Graded: SWE316',
-    snippet: 'Your recent assignment has been graded. Click to view your feedback.',
-    date: DateTime.now().subtract(const Duration(hours: 2)),
-    isImportant: true,
+    summary: 'Your recent assignment has been graded. Click to view your feedback.',
+    body: 'Your recent assignment has been graded. Click to view your feedback.',
+    timestamp: DateTime.now().subtract(const Duration(hours: 2)),
+    classification: 'important',
     hasEvent: false,
     category: EmailCategory.blackboard,
     courseCode: 'SWE316',
   ),
   // 5. Unimportant, Dated
-  Email(
+  EmailModel(
     id: 'e5',
-    sender: 'Dean of Student Affairs',
+    fromAddress: 'Dean of Student Affairs',
     subject: 'Hackathon Registration Open!',
-    snippet: 'Don\'t miss the upcoming KFUPM hackathon this weekend. Great prizes and food!',
-    date: DateTime.now().subtract(const Duration(minutes: 15)),
+    summary: 'Don\'t miss the upcoming KFUPM hackathon this weekend. Great prizes and food!',
+    body: 'Don\'t miss the upcoming KFUPM hackathon this weekend. Great prizes and food!',
+    timestamp: DateTime.now().subtract(const Duration(minutes: 15)),
     eventDate: DateTime.now().add(const Duration(days: 2, hours: 10)),
-    isImportant: false,
+    classification: 'not_important',
     hasEvent: true,
     category: EmailCategory.other,
   ),
   // 6. Unimportant, Dated
-  Email(
+  EmailModel(
     id: 'e6',
-    sender: 'Career Services',
+    fromAddress: 'Career Services',
     subject: 'Job Fair This Thursday!',
-    snippet: 'Top companies including Aramco, SABIC, and STC will be recruiting on campus.',
-    date: DateTime.now().subtract(const Duration(hours: 8)),
+    summary: 'Top companies including Aramco, SABIC, and STC will be recruiting on campus.',
+    body: 'Top companies including Aramco, SABIC, and STC will be recruiting on campus.',
+    timestamp: DateTime.now().subtract(const Duration(hours: 8)),
     eventDate: DateTime.now().add(const Duration(days: 3, hours: 9)),
-    isImportant: false,
+    classification: 'not_important',
     hasEvent: true,
     category: EmailCategory.other,
   ),
   // 7. Unimportant, Undated
-  Email(
+  EmailModel(
     id: 'e7',
-    sender: 'Campus Dining',
+    fromAddress: 'Campus Dining',
     subject: 'Weekly Menu Updates & Discounts',
-    snippet: 'Check out the new meals available at the student mall food court this week.',
-    date: DateTime.now().subtract(const Duration(hours: 5)),
-    isImportant: false,
+    summary: 'Check out the new meals available at the student mall food court this week.',
+    body: 'Check out the new meals available at the student mall food court this week.',
+    timestamp: DateTime.now().subtract(const Duration(hours: 5)),
+    classification: 'not_important',
     hasEvent: false,
     category: EmailCategory.other,
   ),
   // 8. Unimportant, Undated
-  Email(
+  EmailModel(
     id: 'e8',
-    sender: 'KFUPM Newsletter',
+    fromAddress: 'KFUPM Newsletter',
     subject: 'Weekly Tech News',
-    snippet: 'A round-up of the latest technology news around the campus.',
-    date: DateTime.now().subtract(const Duration(days: 2)),
-    isImportant: false,
+    summary: 'A round-up of the latest technology news around the campus.',
+    body: 'A round-up of the latest technology news around the campus.',
+    timestamp: DateTime.now().subtract(const Duration(days: 2)),
+    classification: 'not_important',
     hasEvent: false,
     category: EmailCategory.other,
   ),
