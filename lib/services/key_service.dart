@@ -17,9 +17,54 @@ class KeyService {
   static const String _privateKeyKey = 'device_private_key_bytes';
   static const String _publicKeyKey = 'device_public_key_b64';
 
-  final _algo =
-      Ed25519(); // Ed25519 is simpler; swap for Ecdsa.p256() if backend requires P-256
+  final _algo = X25519();
 
+  Future<Map<String, dynamic>> decryptEmail(String encryptedBase64) async {
+    final envelope = jsonDecode(utf8.decode(base64Decode(encryptedBase64)))
+    as Map<String, dynamic>;
+
+    final privateKeyBytes = base64Decode(
+        (await _storage.read(key: _privateKeyKey))!);
+    final publicKeyBytes = base64Decode(
+        (await _storage.read(key: _publicKeyKey))!);
+
+    final keyPair = SimpleKeyPairData(
+      privateKeyBytes,
+      publicKey: SimplePublicKey(publicKeyBytes, type: KeyPairType.x25519),
+      type: KeyPairType.x25519,
+    );
+
+    final ephemeralPublicKey = SimplePublicKey(
+      base64Decode(envelope['ephemeral_public'] as String),
+      type: KeyPairType.x25519,
+    );
+
+    final x25519 = X25519();
+    final sharedSecret = await x25519.sharedSecretKey(
+      keyPair: keyPair,
+      remotePublicKey: ephemeralPublicKey,
+    );
+
+    // HKDF-SHA256 → 32-byte AES key
+    final hkdf = Hkdf(hmac: Hmac.sha256(), outputLength: 32);
+    final aesKey = await hkdf.deriveKey(
+      secretKey: sharedSecret,
+      info: utf8.encode('email-encryption'),
+    );
+
+    // AES-256-GCM decrypt
+    final nonce = base64Decode(envelope['nonce'] as String);
+    final ciphertext = base64Decode(envelope['ciphertext'] as String);
+    final tag = base64Decode(envelope['tag'] as String);
+
+    final aesGcm = AesGcm.with256bits();
+    final plaintext = await aesGcm.decrypt(
+      SecretBox(ciphertext, nonce: nonce, mac: Mac(tag)),
+      secretKey: aesKey,
+    );
+
+    return jsonDecode(utf8.decode(plaintext)) as Map<String, dynamic>;
+  }
   /// Returns true if a key pair has already been generated for this device.
   Future<bool> hasKeyPair() async {
     final value = await _storage.read(key: _publicKeyKey);
