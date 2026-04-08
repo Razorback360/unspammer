@@ -547,22 +547,50 @@ class _EmailCardState extends State<EmailCard> {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  if (email.hasEvent &&
-                      !email.isImportant &&
-                      !dummyEvents.any(
+                  if (!dummyEvents.any(
                         (e) => e.sourceEmailId == email.id,
                       )) ...[
                     const SizedBox(height: 12),
                     GestureDetector(
-                      onTap: () {
-                        final eventDate = email.eventDate ?? email.date;
+                      onTap: () async {
+                        DateTime? eventDate = email.eventDate;
+
+                        if (!email.hasEvent || eventDate == null) {
+                          // Allow user to select a date and time
+                          final selectedDate = await showDatePicker(
+                            context: context,
+                            initialDate: DateTime.now(),
+                            firstDate: DateTime.now().subtract(const Duration(days: 365)),
+                            lastDate: DateTime.now().add(const Duration(days: 365)),
+                          );
+
+                          if (selectedDate == null) return; // User canceled
+
+                          if (!context.mounted) return;
+
+                          final selectedTime = await showTimePicker(
+                            context: context,
+                            initialTime: TimeOfDay.now(),
+                          );
+
+                          if (selectedTime == null) return; // User canceled
+
+                          eventDate = DateTime(
+                            selectedDate.year,
+                            selectedDate.month,
+                            selectedDate.day,
+                            selectedTime.hour,
+                            selectedTime.minute,
+                          );
+                        }
+
                         setState(() {
                           dummyEvents.add(
                             CalendarEvent(
                               id: 'manual_${email.id}',
                               title: email.subject,
                               description: email.snippet,
-                              date: eventDate,
+                              date: eventDate!,
                               sourceEmailId: email.id,
                             ),
                           );
