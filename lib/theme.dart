@@ -120,6 +120,55 @@ ThemeData get appTheme => ThemeData(
     onSecondary: AppColors.white,
     onSurface: AppColors.textPrimary,
   ),
+  datePickerTheme: DatePickerThemeData(
+    backgroundColor: AppColors.surface,
+    headerBackgroundColor: AppColors.primary,
+    headerForegroundColor: AppColors.white,
+    dayStyle: GoogleFonts.spaceGrotesk(),
+    weekdayStyle: GoogleFonts.spaceGrotesk(fontWeight: FontWeight.w600),
+    yearStyle: GoogleFonts.spaceGrotesk(),
+    todayForegroundColor: WidgetStateProperty.all(AppColors.accent),
+    todayBorder: BorderSide(color: AppColors.accent),
+    dayForegroundColor: WidgetStateProperty.resolveWith((states) {
+      if (states.contains(WidgetState.selected)) return AppColors.surface;
+      if (states.contains(WidgetState.disabled)) return AppColors.textMuted;
+      return AppColors.textPrimary;
+    }),
+    dayBackgroundColor: WidgetStateProperty.resolveWith((states) {
+      if (states.contains(WidgetState.selected)) return AppColors.primary;
+      return null;
+    }),
+    cancelButtonStyle: TextButton.styleFrom(foregroundColor: AppColors.textSecondary),
+    confirmButtonStyle: TextButton.styleFrom(foregroundColor: AppColors.primary),
+  ),
+  timePickerTheme: TimePickerThemeData(
+    backgroundColor: AppColors.surface,
+    dayPeriodTextStyle: GoogleFonts.spaceGrotesk(),
+    helpTextStyle: GoogleFonts.spaceGrotesk(color: AppColors.textSecondary),
+    dialBackgroundColor: AppColors.isDark ? AppColors.surfaceLight : AppColors.surfaceLight.withValues(alpha: 0.5),
+    dialTextColor: AppColors.textPrimary,
+    dialHandColor: AppColors.primary,
+    entryModeIconColor: AppColors.primary,
+    hourMinuteTextStyle: GoogleFonts.spaceGrotesk(fontSize: 48, fontWeight: FontWeight.bold),
+    hourMinuteColor: WidgetStateColor.resolveWith((states) {
+      if (states.contains(WidgetState.selected)) return AppColors.primary.withValues(alpha: 0.2);
+      return AppColors.surfaceLight;
+    }),
+    hourMinuteTextColor: WidgetStateColor.resolveWith((states) {
+      if (states.contains(WidgetState.selected)) return AppColors.primary;
+      return AppColors.textPrimary;
+    }),
+    dayPeriodColor: WidgetStateColor.resolveWith((states) {
+      if (states.contains(WidgetState.selected)) return AppColors.primary.withValues(alpha: 0.2);
+      return AppColors.surfaceLight;
+    }),
+    dayPeriodTextColor: WidgetStateColor.resolveWith((states) {
+      if (states.contains(WidgetState.selected)) return AppColors.primary;
+      return AppColors.textPrimary;
+    }),
+    cancelButtonStyle: TextButton.styleFrom(foregroundColor: AppColors.textSecondary),
+    confirmButtonStyle: TextButton.styleFrom(foregroundColor: AppColors.primary),
+  ),
   appBarTheme: AppBarTheme(
     backgroundColor: Colors.transparent,
     foregroundColor: AppColors.textPrimary,
