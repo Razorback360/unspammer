@@ -187,7 +187,7 @@ class _AnimatedNavItemState extends State<_AnimatedNavItem>
             scale: _isPressed ? 0.95 : 1.0,
             duration: const Duration(milliseconds: 100),
             child: AnimatedContainer(
-              duration: const Duration(milliseconds: 300),
+              duration: const Duration(milliseconds: 150),
               curve: Curves.easeOutCubic,
               padding: EdgeInsets.symmetric(
                 horizontal: widget.isSelected ? 24 : 20,
@@ -229,11 +229,12 @@ class _AnimatedNavItemState extends State<_AnimatedNavItem>
                     clipBehavior: Clip.none,
                     children: [
                       TweenAnimationBuilder<double>(
-                        tween: Tween(begin: 0, end: widget.isSelected ? 1 : 0),
-                        duration: const Duration(milliseconds: 300),
+                        tween: Tween<double>(
+                            begin: 0.0, end: widget.isSelected ? 1.0 : 0.0),
+                        duration: const Duration(milliseconds: 150),
                         builder: (context, value, child) {
                           return Transform.scale(
-                            scale: 1 + value * 0.1,
+                            scale: 1.0 + value * 0.1,
                             child: Icon(
                               widget.icon,
                               color: Color.lerp(
@@ -255,7 +256,7 @@ class _AnimatedNavItemState extends State<_AnimatedNavItem>
                     ],
                   ),
                   AnimatedSize(
-                    duration: const Duration(milliseconds: 250),
+                    duration: const Duration(milliseconds: 150),
                     curve: Curves.easeOutCubic,
                     child: widget.isSelected
                         ? Row(
