@@ -10,22 +10,24 @@ class AuthViewModel extends ChangeNotifier {
   AuthUser? _user;
   bool _isLoading = false;
   String? _error;
-  List<GmailMessageMetadata> _gmailPreview = const <GmailMessageMetadata>[];
 
   AuthUser? get user => _user;
   bool get isLoading => _isLoading;
   String? get error => _error;
-  List<GmailMessageMetadata> get gmailPreview => _gmailPreview;
+  bool get isLoggedIn => _user != null;
 
-  Future<void> signIn() async {
-    await _runGuarded(() async {
-      _user = await _authService.signIn();
-    });
+  /// Checks secure storage for a persisted session.
+  /// Call once at startup; if true, skip to home.
+  Future<bool> checkExistingSession() async {
+    return _authService.isLoggedIn();
   }
 
-  Future<void> trySilentSignIn() async {
+  /// Runs the full Microsoft OAuth + backend code exchange flow.
+  /// Notifies listeners when done. Check [error] for failures.
+  Future<void> signIn() async {
     await _runGuarded(() async {
-      _user = await _authService.signInSilently();
+      final code = await _authService.signInWithMicrosoft();
+      _user = await _authService.exchangeCode(code);
     });
   }
 
@@ -33,13 +35,6 @@ class AuthViewModel extends ChangeNotifier {
     await _runGuarded(() async {
       await _authService.signOut();
       _user = null;
-      _gmailPreview = const <GmailMessageMetadata>[];
-    });
-  }
-
-  Future<void> loadGmailPreview() async {
-    await _runGuarded(() async {
-      _gmailPreview = await _authService.fetchRecentGmailMetadata(maxResults: 5);
     });
   }
 
@@ -58,4 +53,3 @@ class AuthViewModel extends ChangeNotifier {
     }
   }
 }
-

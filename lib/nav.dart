@@ -1,7 +1,9 @@
 import 'package:go_router/go_router.dart';
 
+import 'di/service_locator.dart';
 import 'screens/home_page.dart';
 import 'screens/login_page.dart';
+import 'services/auth_service.dart';
 
 /// GoRouter configuration for app navigation
 ///
@@ -19,6 +21,15 @@ import 'screens/login_page.dart';
 class AppRouter {
   static final GoRouter router = GoRouter(
     initialLocation: AppRoutes.login,
+    redirect: (context, state) async {
+      final loggedIn = await getIt<AuthService>().isLoggedIn();
+      final goingToLogin = state.matchedLocation == AppRoutes.login;
+
+      // Already authenticated → skip login and go straight to home
+      if (loggedIn && goingToLogin) return AppRoutes.home;
+
+      return null; // no redirect
+    },
     routes: [
       GoRoute(
         path: AppRoutes.login,
