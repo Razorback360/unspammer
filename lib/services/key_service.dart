@@ -19,14 +19,18 @@ class KeyService {
 
   final _algo = X25519();
 
-  Future<Map<String, dynamic>> decryptEmail(String encryptedBase64) async {
-    final envelope = jsonDecode(utf8.decode(base64Decode(encryptedBase64)))
-    as Map<String, dynamic>;
+  /// Shared decryption core — returns the raw decoded JSON value.
+  Future<dynamic> _decryptRaw(String encryptedBase64) async {
+    final envelope =
+        jsonDecode(utf8.decode(base64Decode(encryptedBase64)))
+            as Map<String, dynamic>;
 
     final privateKeyBytes = base64Decode(
-        (await _storage.read(key: _privateKeyKey))!);
+      (await _storage.read(key: _privateKeyKey))!,
+    );
     final publicKeyBytes = base64Decode(
-        (await _storage.read(key: _publicKeyKey))!);
+      (await _storage.read(key: _publicKeyKey))!,
+    );
 
     final keyPair = SimpleKeyPairData(
       privateKeyBytes,
@@ -45,14 +49,12 @@ class KeyService {
       remotePublicKey: ephemeralPublicKey,
     );
 
-    // HKDF-SHA256 → 32-byte AES key
     final hkdf = Hkdf(hmac: Hmac.sha256(), outputLength: 32);
     final aesKey = await hkdf.deriveKey(
       secretKey: sharedSecret,
       info: utf8.encode('email-encryption'),
     );
 
-    // AES-256-GCM decrypt
     final nonce = base64Decode(envelope['nonce'] as String);
     final ciphertext = base64Decode(envelope['ciphertext'] as String);
     final tag = base64Decode(envelope['tag'] as String);
@@ -63,8 +65,19 @@ class KeyService {
       secretKey: aesKey,
     );
 
-    return jsonDecode(utf8.decode(plaintext)) as Map<String, dynamic>;
+    return jsonDecode(utf8.decode(plaintext));
   }
+
+  /// Decrypts an encrypted base64 payload into a single email map.
+  Future<Map<String, dynamic>> decryptEmail(String encryptedBase64) async {
+    return (await _decryptRaw(encryptedBase64)) as Map<String, dynamic>;
+  }
+
+  /// Decrypts an encrypted base64 payload that contains a list of emails.
+  Future<List<dynamic>> decryptList(String encryptedBase64) async {
+    return (await _decryptRaw(encryptedBase64)) as List<dynamic>;
+  }
+
   /// Returns true if a key pair has already been generated for this device.
   Future<bool> hasKeyPair() async {
     final value = await _storage.read(key: _publicKeyKey);
