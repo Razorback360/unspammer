@@ -1,7 +1,10 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:unspammer/models/calendar_model.dart';
 import 'package:unspammer/models/dummy_data.dart';
+import 'package:unspammer/services/database_service.dart';
 import 'package:unspammer/theme.dart';
 
 class CalendarPage extends StatefulWidget {
@@ -71,28 +74,10 @@ class _CalendarPageState extends State<CalendarPage>
     super.dispose();
   }
 
-  Map<String, List<CalendarEvent>> _computeEvents() {
+  Map<String, List<CalendarEvent>> _computeEvents(List<CalendarEvent> events) {
     final map = <String, List<CalendarEvent>>{};
-
-    for (final event in dummyEvents) {
+    for (final event in events) {
       map.putIfAbsent(_dateKey(event.date), () => []).add(event);
-    }
-
-    for (final email in dummyEmails.where((e) => e.isImportant && e.hasEvent)) {
-      if (!dummyEvents.any((e) => e.sourceEmailId == email.id)) {
-        final eventDate = email.eventDate ?? email.timestamp;
-        map
-            .putIfAbsent(_dateKey(eventDate), () => [])
-            .add(
-              CalendarEvent(
-                id: 'auto_${email.id}',
-                title: email.subject,
-                description: email.summary,
-                date: eventDate,
-                sourceEmailId: email.id,
-              ),
-            );
-      }
     }
     return map;
   }
@@ -114,7 +99,7 @@ class _CalendarPageState extends State<CalendarPage>
     _selectDate(now);
   }
 
-  void _showAddEventDialog() {
+  void _showAddEventDialog(BuildContext context) {
     final titleController = TextEditingController();
     showDialog(
       context: context,
@@ -137,17 +122,15 @@ class _CalendarPageState extends State<CalendarPage>
           TextButton(
             onPressed: () {
               if (titleController.text.isNotEmpty) {
-                setState(() {
-                  dummyEvents.add(
-                    CalendarEvent(
-                      id: DateTime.now().millisecondsSinceEpoch.toString(),
-                      title: titleController.text,
-                      description: 'Custom scheduled event',
-                      date: _selectedDate,
-                      sourceEmailId: '',
-                    ),
-                  );
-                });
+                context.read<DatabaseService>().insertEvent(
+                  CalendarEvent(
+                    id: DateTime.now().millisecondsSinceEpoch.toString(),
+                    title: titleController.text,
+                    description: 'Custom scheduled event',
+                    date: _selectedDate,
+                    sourceEmailId: '',
+                  ),
+                );
               }
               Navigator.pop(context);
             },
@@ -160,108 +143,121 @@ class _CalendarPageState extends State<CalendarPage>
 
   @override
   Widget build(BuildContext context) {
-    final eventsMap = _computeEvents();
-    bool hasEventsOnDate(DateTime date) =>
-        eventsMap.containsKey(_dateKey(date));
-    final selectedEvents = eventsMap[_dateKey(_selectedDate)] ?? [];
+    return StreamBuilder<List<CalendarEvent>>(
+      stream: context.read<DatabaseService>().watchAllEvents(),
+      initialData: const [],
+      builder: (context, snapshot) {
+        final events = snapshot.data ?? const [];
+        final eventsMap = _computeEvents(events);
+        bool hasEventsOnDate(DateTime date) =>
+            eventsMap.containsKey(_dateKey(date));
+        final selectedEvents = eventsMap[_dateKey(_selectedDate)] ?? [];
 
-    return Scaffold(
-      backgroundColor: AppColors.surface,
-      body: Stack(
-        children: [
-          SafeArea(
-            child: Stack(
-              children: [
-                ListView(
-                  physics: const BouncingScrollPhysics(),
+        final months = [
+          'January', 'February', 'March', 'April', 'May', 'June',
+          'July', 'August', 'September', 'October', 'November', 'December',
+        ];
+        final monthName = months[_focusedMonth.month - 1];
+
+        return Scaffold(
+          backgroundColor: AppColors.surface,
+          body: Stack(
+            children: [
+              SafeArea(
+                child: Stack(
                   children: [
-                    // Header
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Schedule',
-                                  style: context.textStyles.displaySmall
-                                      ?.copyWith(
-                                        color: AppColors.textPrimary,
-                                        fontWeight: FontWeight.w700,
-                                      ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  '${dummyEvents.length} upcoming events - ${_focusedMonth.month == 4 ? 'April' : 'Month'} ${_focusedMonth.year}',
-                                  style: context.textStyles.bodyMedium
-                                      ?.copyWith(
-                                        color: AppColors.textSecondary,
-                                      ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.end,
+                    ListView(
+                      physics: const BouncingScrollPhysics(),
+                      children: [
+                        // Header
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              IconButton(
-                                icon: Icon(
-                                  AppColors.isDark
-                                      ? Icons.light_mode_rounded
-                                      : Icons.dark_mode_rounded,
-                                  color: AppColors.textPrimary,
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Schedule',
+                                      style: context.textStyles.displaySmall
+                                          ?.copyWith(
+                                            color: AppColors.textPrimary,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      '${events.length} upcoming events - $monthName ${_focusedMonth.year}',
+                                      style: context.textStyles.bodyMedium
+                                          ?.copyWith(
+                                            color: AppColors.textSecondary,
+                                          ),
+                                    ),
+                                  ],
                                 ),
-                                onPressed: () {
-                                  AppColors.toggleTheme();
-                                },
                               ),
-                              const SizedBox(height: 8),
-                              _AnimatedTodayButton(onTap: _jumpToToday),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  IconButton(
+                                    icon: Icon(
+                                      AppColors.isDark
+                                          ? Icons.light_mode_rounded
+                                          : Icons.dark_mode_rounded,
+                                      color: AppColors.textPrimary,
+                                    ),
+                                    onPressed: () {
+                                      AppColors.toggleTheme();
+                                    },
+                                  ),
+                                  const SizedBox(height: 8),
+                                  _AnimatedTodayButton(onTap: _jumpToToday),
+                                ],
+                              ),
                             ],
                           ),
-                        ],
+                        ),
+                        const SizedBox(height: 24),
+
+                        // Calendar
+                        _CalendarWidget(
+                          focusedMonth: _focusedMonth,
+                          selectedDate: _selectedDate,
+                          hasEventsOnDate: hasEventsOnDate,
+                          onDateSelected: _selectDate,
+                          onMonthChanged: (month) =>
+                              setState(() => _focusedMonth = month),
+                        ),
+
+                        // Keep room so content remains visible above the panel.
+                        const SizedBox(height: 260),
+                      ],
+                    ),
+                    Positioned.fill(
+                      child: _EventsPanel(
+                        selectedDate: _selectedDate,
+                        events: selectedEvents,
+                        animController: _eventAnimController,
+                        onDeleteEvent: (event) {
+                          context.read<DatabaseService>().deleteEvent(event.id);
+                        },
+                        onAddEvent: () => _showAddEventDialog(context),
                       ),
                     ),
-                    const SizedBox(height: 24),
-
-                    // Calendar
-                    _CalendarWidget(
-                      focusedMonth: _focusedMonth,
-                      selectedDate: _selectedDate,
-                      hasEventsOnDate: hasEventsOnDate,
-                      onDateSelected: _selectDate,
-                      onMonthChanged: (month) =>
-                          setState(() => _focusedMonth = month),
-                    ),
-
-                    // Keep room so content remains visible above the panel.
-                    const SizedBox(height: 260),
                   ],
                 ),
-                Positioned.fill(
-                  child: _EventsPanel(
-                    selectedDate: _selectedDate,
-                    events: selectedEvents,
-                    animController: _eventAnimController,
-                    onDeleteEvent: (event) {
-                      setState(() {
-                        dummyEvents.removeWhere((e) => e.id == event.id);
-                      });
-                    },
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 }
+
 
 class _AnimatedTodayButton extends StatefulWidget {
   final VoidCallback onTap;
@@ -716,12 +712,14 @@ class _EventsPanel extends StatelessWidget {
   final List<CalendarEvent> events;
   final AnimationController animController;
   final ValueChanged<CalendarEvent> onDeleteEvent;
+  final VoidCallback onAddEvent;
 
   const _EventsPanel({
     required this.selectedDate,
     required this.events,
     required this.animController,
     required this.onDeleteEvent,
+    required this.onAddEvent,
   });
 
   @override
@@ -783,6 +781,26 @@ class _EventsPanel extends StatelessWidget {
                             child: Container(
                               height: 1,
                               color: AppColors.border,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          GestureDetector(
+                            onTap: onAddEvent,
+                            child: Container(
+                              width: 36,
+                              height: 36,
+                              decoration: BoxDecoration(
+                                color: AppColors.green.withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(AppRadius.sm),
+                                border: Border.all(
+                                  color: AppColors.green.withValues(alpha: 0.3),
+                                ),
+                              ),
+                              child: Icon(
+                                Icons.add_rounded,
+                                color: AppColors.green,
+                                size: 20,
+                              ),
                             ),
                           ),
                         ],
