@@ -2,18 +2,22 @@ import 'package:hive_flutter/hive_flutter.dart';
 
 import '../models/notification_model.dart';
 import '../models/email_model.dart';
+import '../models/calendar_model.dart';
 
 class DatabaseService {
   static const String _notificationsBox = 'notifications_box';
   static const String _emailsBox = 'emails_box';
+  static const String _eventsBox = 'events_box';
 
   late final Box<Map> _box;
   late final Box<Map> _emailsStorageBox;
+  late final Box<Map> _eventsStorageBox;
 
   Future<void> init() async {
     await Hive.initFlutter();
     _box = await Hive.openBox<Map>(_notificationsBox);
     _emailsStorageBox = await Hive.openBox<Map>(_emailsBox);
+    _eventsStorageBox = await Hive.openBox<Map>(_eventsBox);
   }
 
   // --- Notifications ---
@@ -73,11 +77,66 @@ class DatabaseService {
     await _emailsStorageBox.delete(id);
   }
 
+  Future<void> markEmailAsImportant({
+    required String id,
+    required bool isImportant,
+  }) async {
+    final existing = _emailsStorageBox.get(id);
+    if (existing == null) return;
+    final current = EmailModel.fromMap(existing, id);
+    final newClassification = isImportant ? 'Important' : 'Unimportant';
+    await _emailsStorageBox.put(
+      id,
+      current.copyWith(classification: newClassification).toMap(),
+    );
+  }
+
+  Future<void> updateEmailEventDate({
+    required String id,
+    required DateTime eventDate,
+  }) async {
+    final existing = _emailsStorageBox.get(id);
+    if (existing == null) return;
+    final current = EmailModel.fromMap(existing, id);
+    await _emailsStorageBox.put(
+      id,
+      current.copyWith(eventDate: eventDate, hasEvent: true).toMap(),
+    );
+  }
+
   List<EmailModel> _toSortedEmailsList(Map<dynamic, dynamic> mapEntries) {
     final list = mapEntries.entries
         .map((e) => EmailModel.fromMap(e.value as Map<dynamic, dynamic>, e.key as String))
         .toList(growable: false);
     list.sort((a, b) => b.timestamp.compareTo(a.timestamp));
+    return list;
+  }
+
+  // --- Calendar Events ---
+  Future<void> insertEvent(CalendarEvent event) async {
+    await _eventsStorageBox.put(event.id, event.toMap());
+  }
+
+  Future<List<CalendarEvent>> fetchAllEvents() async {
+    return _toSortedEventsList(_eventsStorageBox.toMap());
+  }
+
+  Stream<List<CalendarEvent>> watchAllEvents() {
+    return _eventsStorageBox
+        .watch()
+        .map((_) => _toSortedEventsList(_eventsStorageBox.toMap()))
+        .startWith(_toSortedEventsList(_eventsStorageBox.toMap()));
+  }
+
+  Future<void> deleteEvent(String id) async {
+    await _eventsStorageBox.delete(id);
+  }
+
+  List<CalendarEvent> _toSortedEventsList(Map<dynamic, dynamic> mapEntries) {
+    final list = mapEntries.entries
+        .map((e) => CalendarEvent.fromMap(e.value as Map<dynamic, dynamic>, e.key as String))
+        .toList(growable: false);
+    list.sort((a, b) => a.date.compareTo(b.date));
     return list;
   }
 }
