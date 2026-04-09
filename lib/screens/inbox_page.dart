@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:unspammer/models/calendar_model.dart';
 import 'package:unspammer/models/dummy_data.dart';
 import 'package:unspammer/models/email_model.dart';
+import 'package:unspammer/services/database_service.dart';
 import 'package:unspammer/theme.dart';
+import 'package:unspammer/viewmodels/email_view_model.dart';
 
 class InboxPage extends StatefulWidget {
   const InboxPage({super.key});
@@ -17,22 +21,22 @@ class _InboxPageState extends State<InboxPage> with TickerProviderStateMixin {
   late AnimationController _animController;
   late AnimationController _shimmerController;
 
-  List<String> get _availableCourses {
-    return dummyEmails
+  List<String> _availableCourses(List<EmailModel> emails) {
+    return emails
         .where((e) => e.isImportant && e.courseCode != null)
         .map((e) => e.courseCode!)
         .toSet()
         .toList();
   }
 
-  List<EmailModel> get _filteredEmails {
-    if (_selectedFilter == 0) return dummyEmails;
+  List<EmailModel> _filteredEmails(List<EmailModel> emails) {
+    if (_selectedFilter == 0) return emails;
     if (_selectedFilter == 2) {
-      return dummyEmails.where((e) => !e.isImportant).toList();
+      return emails.where((e) => !e.isImportant).toList();
     }
 
     // Important tab (_selectedFilter == 1)
-    var filtered = dummyEmails.where((e) => e.isImportant).toList();
+    var filtered = emails.where((e) => e.isImportant).toList();
 
     if (_categoryFilter != null) {
       filtered = filtered.where((e) => e.category == _categoryFilter).toList();
@@ -79,135 +83,165 @@ class _InboxPageState extends State<InboxPage> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    final filteredEmails = _filteredEmails;
+    final emailVm = context.watch<EmailViewModel>();
+    final emails = emailVm.emails;
+    final filteredEmails = _filteredEmails(emails);
 
     return Scaffold(
       backgroundColor: AppColors.background,
       body: Stack(
         children: [
           SafeArea(
-            child: CustomScrollView(
-              slivers: [
-                // Header
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Good morning,',
-                          style: context.textStyles.bodyMedium?.copyWith(
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                        Row(
-                          children: [
-                            Text(
-                              'Student',
-                              style: context.textStyles.displaySmall?.copyWith(
-                                color: AppColors.textPrimary,
-                                fontWeight: FontWeight.w700,
-                              ),
+            child: RefreshIndicator(
+              onRefresh: () => context.read<EmailViewModel>().syncFromServer(),
+              child: CustomScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                slivers: [
+                  // Header
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Good morning,',
+                            style: context.textStyles.bodyMedium?.copyWith(
+                              color: AppColors.textSecondary,
                             ),
-                            const SizedBox(width: 8),
-                            const Text('👋', style: TextStyle(fontSize: 24)),
-                            const Spacer(),
-                            IconButton(
-                              icon: Icon(
-                                AppColors.isDark
-                                    ? Icons.light_mode_rounded
-                                    : Icons.dark_mode_rounded,
-                                color: AppColors.textPrimary,
+                          ),
+                          Row(
+                            children: [
+                              Text(
+                                'Student',
+                                style: context.textStyles.displaySmall
+                                    ?.copyWith(
+                                      color: AppColors.textPrimary,
+                                      fontWeight: FontWeight.w700,
+                                    ),
                               ),
-                              onPressed: () {
-                                AppColors.toggleTheme();
+                              const SizedBox(width: 8),
+                              const Text('👋', style: TextStyle(fontSize: 24)),
+                              const Spacer(),
+                              IconButton(
+                                icon: Icon(
+                                  AppColors.isDark
+                                      ? Icons.light_mode_rounded
+                                      : Icons.dark_mode_rounded,
+                                  color: AppColors.textPrimary,
+                                ),
+                                onPressed: () {
+                                  AppColors.toggleTheme();
+                                },
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 20),
+                          _FilterChips(
+                            selectedIndex: _selectedFilter,
+                            onSelected: _changeFilter,
+                          ),
+                          if (_selectedFilter == 1) ...[
+                            const SizedBox(height: 16),
+                            _ImportantFilters(
+                              selectedCategory: _categoryFilter,
+                              selectedCourse: _courseFilter,
+                              availableCourses: _availableCourses(emails),
+                              onCategoryChanged: (category) {
+                                setState(() {
+                                  _categoryFilter = category;
+                                  _courseFilter = null;
+                                });
+                              },
+                              onCourseChanged: (course) {
+                                setState(() {
+                                  _courseFilter = course;
+                                });
                               },
                             ),
                           ],
-                        ),
-                        const SizedBox(height: 20),
-                        _FilterChips(
-                          selectedIndex: _selectedFilter,
-                          onSelected: _changeFilter,
-                        ),
-                        if (_selectedFilter == 1) ...[
-                          const SizedBox(height: 16),
-                          _ImportantFilters(
-                            selectedCategory: _categoryFilter,
-                            selectedCourse: _courseFilter,
-                            availableCourses: _availableCourses,
-                            onCategoryChanged: (category) {
-                              setState(() {
-                                _categoryFilter = category;
-                                _courseFilter = null;
-                              });
-                            },
-                            onCourseChanged: (course) {
-                              setState(() {
-                                _courseFilter = course;
-                              });
-                            },
-                          ),
                         ],
-                      ],
+                      ),
                     ),
                   ),
-                ),
 
-                // Email List
-                SliverPadding(
-                  padding: const EdgeInsets.all(20),
-                  sliver: SliverList(
-                    delegate: SliverChildBuilderDelegate((context, index) {
-                      final email = filteredEmails[index];
-                      return AnimatedBuilder(
-                        animation: _animController,
-                        builder: (context, child) {
-                          final delay = (index * 0.15).clamp(0.0, 0.7);
-                          final normalized =
-                              (_animController.value - delay) / (1.0 - delay);
-                          final safeProgress = normalized.isFinite
-                              ? normalized.clamp(0.0, 1.0).toDouble()
-                              : 0.0;
-                          final motion = Curves.easeOutCubic.transform(
-                            safeProgress,
-                          );
-                          final opacityProgress = motion
-                              .clamp(0.0, 1.0)
-                              .toDouble();
-                          return Transform.translate(
-                            offset: Offset(0, 24 * (1 - motion)),
-                            child: Opacity(
-                              opacity: opacityProgress,
-                              child: child,
+                  // Email List
+                  SliverPadding(
+                    padding: const EdgeInsets.all(20),
+                    sliver: filteredEmails.isEmpty
+                        ? SliverFillRemaining(
+                            hasScrollBody: false,
+                            child: Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.mail_outline_rounded,
+                                    size: 56,
+                                    color: AppColors.textMuted,
+                                  ),
+                                  const SizedBox(height: 16),
+                                  Text(
+                                    'No emails available',
+                                    style: context.textStyles.bodyMedium
+                                        ?.copyWith(
+                                          color: AppColors.textSecondary,
+                                        ),
+                                  ),
+                                ],
+                              ),
                             ),
-                          );
-                        },
-                        child: Padding(
-                          padding: const EdgeInsets.only(bottom: 16),
-                          child: EmailCard(
-                            email: email,
-                            shimmerController: _shimmerController,
-                            onToggleImportant: () {
-                              setState(() {
-                                final isNowImportant = !email.isImportant;
-                                final newClassification = isNowImportant ? 'important' : 'not_important';
-                                final index = dummyEmails.indexWhere((e) => e.id == email.id);
-                                if (index != -1) {
-                                  dummyEmails[index] = email.copyWith(classification: newClassification);
-                                }
-                              });
-                            },
+                          )
+                        : SliverList(
+                            delegate: SliverChildBuilderDelegate((
+                              context,
+                              index,
+                            ) {
+                              final email = filteredEmails[index];
+                              return AnimatedBuilder(
+                                animation: _animController,
+                                builder: (context, child) {
+                                  final delay = (index * 0.15).clamp(0.0, 0.7);
+                                  final normalized =
+                                      (_animController.value - delay) /
+                                      (1.0 - delay);
+                                  final safeProgress = normalized.isFinite
+                                      ? normalized.clamp(0.0, 1.0).toDouble()
+                                      : 0.0;
+                                  final motion = Curves.easeOutCubic.transform(
+                                    safeProgress,
+                                  );
+                                  final opacityProgress = motion
+                                      .clamp(0.0, 1.0)
+                                      .toDouble();
+                                  return Transform.translate(
+                                    offset: Offset(0, 24 * (1 - motion)),
+                                    child: Opacity(
+                                      opacity: opacityProgress,
+                                      child: child,
+                                    ),
+                                  );
+                                },
+                                child: Padding(
+                                  padding: const EdgeInsets.only(bottom: 16),
+                                  child: EmailCard(
+                                    email: email,
+                                    shimmerController: _shimmerController,
+                                    onToggleImportant: () {
+                                      context
+                                          .read<EmailViewModel>()
+                                          .toggleImportant(email);
+                                    },
+                                  ),
+                                ),
+                              );
+                            }, childCount: filteredEmails.length),
                           ),
-                        ),
-                      );
-                    }, childCount: filteredEmails.length),
                   ),
-                ),
-              ],
-            ),
-          ),
+                ],
+              ), // CustomScrollView
+            ), // RefreshIndicator
+          ), // SafeArea
         ],
       ),
     );
@@ -553,9 +587,7 @@ class _EmailCardState extends State<EmailCard> {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  if (!dummyEvents.any(
-                        (e) => e.sourceEmailId == email.id,
-                      )) ...[
+                  if (email.eventDate == null) ...[
                     const SizedBox(height: 12),
                     GestureDetector(
                       onTap: () async {
@@ -566,12 +598,15 @@ class _EmailCardState extends State<EmailCard> {
                           final selectedDate = await showDatePicker(
                             context: context,
                             initialDate: DateTime.now(),
-                            firstDate: DateTime.now().subtract(const Duration(days: 365)),
-                            lastDate: DateTime.now().add(const Duration(days: 365)),
+                            firstDate: DateTime.now().subtract(
+                              const Duration(days: 365),
+                            ),
+                            lastDate: DateTime.now().add(
+                              const Duration(days: 365),
+                            ),
                           );
 
-                          if (selectedDate == null) return; // User canceled
-
+                          if (selectedDate == null) return;
                           if (!context.mounted) return;
 
                           final selectedTime = await showTimePicker(
@@ -579,7 +614,7 @@ class _EmailCardState extends State<EmailCard> {
                             initialTime: TimeOfDay.now(),
                           );
 
-                          if (selectedTime == null) return; // User canceled
+                          if (selectedTime == null) return;
 
                           eventDate = DateTime(
                             selectedDate.year,
@@ -590,22 +625,29 @@ class _EmailCardState extends State<EmailCard> {
                           );
                         }
 
-                        setState(() {
-                          dummyEvents.add(
-                            CalendarEvent(
-                              id: 'manual_${email.id}',
-                              title: email.subject,
-                              description: email.summary,
-                              date: eventDate!,
-                              sourceEmailId: email.id,
-                            ),
-                          );
-                        });
-                        appCalendarJumpDate.value = eventDate;
+                        if (!context.mounted) return;
+                        final db = context.read<DatabaseService>();
+                        final resolvedDate = eventDate;
+                        final calEvent = CalendarEvent(
+                          id: 'manual_${email.id}',
+                          title: email.subject,
+                          description: email.summary,
+                          date: resolvedDate,
+                          sourceEmailId: email.id,
+                        );
+                        await db.insertEvent(calEvent);
+                        await db.updateEmailEventDate(
+                          id: email.id,
+                          eventDate: resolvedDate,
+                        );
+                        appCalendarJumpDate.value = resolvedDate;
                         appNavigationIndex.value = 1;
                       },
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
                         decoration: BoxDecoration(
                           color: AppColors.green.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(8),

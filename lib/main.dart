@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
@@ -12,6 +14,7 @@ import 'services/firebase_service.dart';
 import 'services/key_service.dart';
 import 'theme.dart';
 import 'viewmodels/auth_view_model.dart';
+import 'viewmodels/email_view_model.dart';
 import 'viewmodels/notification_view_model.dart';
 
 /// Main entry point for the application
@@ -24,12 +27,15 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await Firebase.initializeApp();
-  FcmService.initialize();
+  await FcmService.initialize();
   await setupDependencies();
   await getIt<FirebaseService>().initialize();
 
   // ── First-launch: generate key pair & register device ────────────────────
   await _ensureDeviceRegistered();
+
+  // ── Background email sync — does not block app startup ───────────────────
+  unawaited(FcmService.syncEmails());
 
   runApp(const MyApp());
 }
@@ -92,6 +98,9 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider<NotificationViewModel>(
           create: (context) =>
               NotificationViewModel(context.read<DatabaseService>()),
+        ),
+        ChangeNotifierProvider<EmailViewModel>(
+          create: (context) => EmailViewModel(context.read<DatabaseService>()),
         ),
         ChangeNotifierProvider<AuthViewModel>(
           create: (context) => AuthViewModel(context.read<AuthService>()),
