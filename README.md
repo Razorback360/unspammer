@@ -15,8 +15,9 @@ Unspammer is a Flutter app with a modular architecture that includes:
    - Add `android/app/google-services.json`
    - Add `ios/Runner/GoogleService-Info.plist`
 2. Enable Cloud Messaging in Firebase Console.
-3. Configure Google Sign-In OAuth consent and client IDs.
-4. Add Gmail API to the same Google Cloud project.
+3. Configure Entra ID Sign-In OAuth consent and client IDs.
+4. Add Graph API to the same Entra ID app project.
+5. Enable Mail.Read delegated graph permission.
 
 ## Run
 
