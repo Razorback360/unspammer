@@ -1,32 +1,13 @@
-# UniFocus
+# Unspammer
 
-UniFocus is a Flutter app with a modular architecture that includes:
+Unspammer is a Flutter app with a modular architecture that includes:
 
 - Firebase Cloud Messaging (foreground/background/terminated handling)
 - Foreground local notifications
-- Google OAuth using `google_sign_in`
-- Gmail metadata fetching example via REST API
+- Microsot OAuth
+- Outlook email fetching via REST API, full end to end encryption.
 - Reactive local persistence using Hive
 - MVVM-style state via `Provider` + service layer + DI via `GetIt`
-
-## Folder Structure
-
-```text
-lib/
-  di/
-	service_locator.dart
-  models/
-	notification_model.dart
-  services/
-	auth_service.dart
-	database_service.dart
-	firebase_service.dart
-  viewmodels/
-	auth_view_model.dart
-	notification_view_model.dart
-  screens/
-  main.dart
-```
 
 ## Setup
 
