@@ -7,6 +7,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
+import 'package:intl/intl.dart';
 
 import '../config.dart';
 import '../di/service_locator.dart';
@@ -82,6 +83,10 @@ class FcmService {
         final decryptedEmail = await keyService.decryptEmail(
           encryptedData['data'],
         );
+        print('Full decrypted email fields: $decryptedEmail');
+    print(
+    'event date ${decryptedEmail["event_date"]}',
+    );
         print(
           'Successfully decrypted email from: ${decryptedEmail["from_address"]} - Subject: ${decryptedEmail["subject"]}',
         );
@@ -205,9 +210,38 @@ class FcmService {
     String messageId,
   ) async {
     final eventDateRaw = decryptedEmailData['event_date'] as String?;
-    final eventDate = (eventDateRaw != null && eventDateRaw.isNotEmpty)
-        ? DateTime.tryParse(eventDateRaw)
-        : null;
+    DateTime? eventDate;
+
+    if (eventDateRaw != null && eventDateRaw.isNotEmpty) {
+      eventDate = DateTime.tryParse(eventDateRaw);
+
+      // If basic parsing failed, try custom formats
+      if (eventDate == null) {
+        final formats = [
+          DateFormat('MMMM d, yyyy'),
+          DateFormat('MMM d, yyyy'),
+          DateFormat('dd/MM/yyyy'),
+          DateFormat('MM/dd/yyyy'),
+          DateFormat('yyyy-MM-dd'),
+          DateFormat('yyyy/MM/dd'),
+          DateFormat('dd-MM-yyyy'),
+          DateFormat('MM-dd-yyyy'),
+          DateFormat('dd MMM yyyy'),
+          DateFormat('d MMMM yyyy'),
+          DateFormat('MMMM d, yyyy h:mm a'),
+          DateFormat('MMM d, yyyy h:mm a'),
+          DateFormat('yyyy-MM-dd HH:mm:ss'),
+          DateFormat('yyyy-MM-dd HH:mm'),
+        ];
+
+        for (final format in formats) {
+          try {
+            eventDate = format.parseLoose(eventDateRaw);
+            break;
+          } catch (_) {}
+        }
+      }
+    }
 
     final email = EmailModel(
       id: messageId,
