@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:unspammer/models/calendar_model.dart';
 import 'package:unspammer/models/dummy_data.dart';
 import 'package:unspammer/models/email_model.dart';
+import 'package:unspammer/screens/email_detail_page.dart';
 import 'package:unspammer/services/database_service.dart';
 import 'package:unspammer/theme.dart';
 import 'package:unspammer/viewmodels/email_view_model.dart';
@@ -232,6 +233,42 @@ class _InboxPageState extends State<InboxPage> with TickerProviderStateMixin {
                                           .read<EmailViewModel>()
                                           .toggleImportant(email);
                                     },
+                                    onTap: () {
+                                      final vm = context.read<EmailViewModel>();
+                                      Navigator.of(context).push(
+                                        PageRouteBuilder(
+                                          pageBuilder: (ctx, anim, _) =>
+                                              EmailDetailPage(
+                                                email: email,
+                                                onToggleImportant: () =>
+                                                    vm.toggleImportant(email),
+                                              ),
+                                          transitionsBuilder:
+                                              (
+                                                ctx,
+                                                anim,
+                                                _,
+                                                child,
+                                              ) => SlideTransition(
+                                                position: anim.drive(
+                                                  Tween<Offset>(
+                                                    begin: const Offset(0, 1),
+                                                    end: Offset.zero,
+                                                  ).chain(
+                                                    CurveTween(
+                                                      curve:
+                                                          Curves.easeOutCubic,
+                                                    ),
+                                                  ),
+                                                ),
+                                                child: child,
+                                              ),
+                                          transitionDuration: const Duration(
+                                            milliseconds: 350,
+                                          ),
+                                        ),
+                                      );
+                                    },
                                   ),
                                 ),
                               );
@@ -442,11 +479,13 @@ class EmailCard extends StatefulWidget {
   final EmailModel email;
   final AnimationController shimmerController;
   final VoidCallback? onToggleImportant;
+  final VoidCallback? onTap;
   const EmailCard({
     super.key,
     required this.email,
     required this.shimmerController,
     this.onToggleImportant,
+    this.onTap,
   });
 
   @override
@@ -462,6 +501,7 @@ class _EmailCardState extends State<EmailCard> {
     final timeAgo = _getTimeAgo(email.timestamp);
 
     return GestureDetector(
+      onTap: widget.onTap,
       onTapDown: (_) => setState(() => _isPressed = true),
       onTapUp: (_) => setState(() => _isPressed = false),
       onTapCancel: () => setState(() => _isPressed = false),
