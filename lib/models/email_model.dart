@@ -1,9 +1,4 @@
-enum EmailCategory {
-  blackboard,
-  registrar,
-  direct,
-  other
-}
+enum EmailCategory { blackboard, registrar, direct, other }
 
 class EmailModel {
   final String id;
@@ -18,7 +13,8 @@ class EmailModel {
   final String? courseCode;
   final EmailCategory category;
 
-  bool get isImportant => classification == 'important';
+  bool get isImportant =>
+      classification.toLowerCase() == 'important';
 
   const EmailModel({
     required this.id,
@@ -85,10 +81,16 @@ class EmailModel {
       body: map['body'] as String? ?? '',
       subject: map['subject'] as String? ?? '',
       summary: map['summary'] as String? ?? '',
-      classification: map['classification'] as String? ?? 'not_important',
-      timestamp: DateTime.tryParse(map['timestamp'] as String? ?? '') ?? DateTime.now(),
-      eventDate: map['eventDate'] != null ? DateTime.tryParse(map['eventDate'] as String) : null,
-      hasEvent: map['hasEvent'] as bool? ?? false,
+      classification: map['classification'] as String? ?? 'Unimportant',
+      timestamp:
+          DateTime.tryParse(map['timestamp'] as String? ?? '') ??
+          DateTime.now(),
+      eventDate: map['eventDate'] != null
+          ? DateTime.tryParse(map['eventDate'] as String)
+          : null,
+      hasEvent: map['hasEvent'] as bool? ??
+          (map['eventDate'] != null &&
+              (map['eventDate'] as String).isNotEmpty),
       courseCode: map['courseCode'] as String?,
       category: EmailCategory.values.firstWhere(
         (e) => e.name == map['category'],
@@ -97,4 +99,3 @@ class EmailModel {
     );
   }
 }
-
